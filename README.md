@@ -1,6 +1,6 @@
 # Blurd – Private Payments with ZK Attribute Proofs
 
-**Zypherpunk Hackathon 2025** | Module for Forge Finance
+**Zypherpunk Hackathon 2025** |
 
 ## Overview
 
