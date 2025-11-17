@@ -1,0 +1,20 @@
+{
+  "name": "blurd",
+  "version": "1.0.0",
+  "description": "Blurd - Private Payments with ZK Attribute Proofs for Zypherpunk Hackathon 2025",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:wallet": "cd apps/wallet-app && npm run dev",
+    "dev:merchant": "cd apps/merchant-dashboard && npm run dev",
+    "dev:api": "cd apps/api && npm run dev",
+    "build:zk": "node scripts/build-zk.js",
+    "install:all": "npm install && cd apps/wallet-app && npm install && cd ../merchant-dashboard && npm install && cd ../api && npm install"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0"
+  }
+}
+

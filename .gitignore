@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Production
+build/
+dist/
+.next/
+out/
+
+# Misc
+.DS_Store
+*.pem
+.env*.local
+.env
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ZK Build artifacts
+zk/build/
+zk/circuits/**/*.wasm
+zk/circuits/**/*.zkey
+zk/circuits/**/*.r1cs
+zk/circuits/**/*.sym
+zk/circuits/**/*.ptau
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Keys
+*.key
+*.sk
+*.pk
+keys/
+*.seed
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
