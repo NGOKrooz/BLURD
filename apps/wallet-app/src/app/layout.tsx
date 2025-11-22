@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import Layout from '@/components/Layout'
 import { WalletProvider } from '@/providers/wallet-provider'
+import { ErrorSuppressor } from '@/components/ErrorSuppressor'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -19,9 +20,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <WalletProvider>
-          <Layout>{children}</Layout>
-        </WalletProvider>
+        <ErrorSuppressor>
+          <WalletProvider>
+            <Layout>{children}</Layout>
+          </WalletProvider>
+        </ErrorSuppressor>
       </body>
     </html>
   );

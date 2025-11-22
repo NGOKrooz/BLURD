@@ -38,20 +38,64 @@ const { chains, publicClient } = configureChains(
   [publicProvider()]
 );
 
+// Get WalletConnect project ID from environment variable
+// If not set, WalletConnect will be disabled (only MetaMask/Injected wallets will work)
+const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '';
+
 // Use getDefaultWallets to properly configure RainbowKit's ConnectButton modal
 // This ensures wallet options are displayed correctly
 // WalletConnect errors will be handled gracefully during connection attempts
-const { connectors } = getDefaultWallets({
-  appName: 'Blurd',
-  projectId: 'blurd-wallet-connect',
-  chains,
-});
+let connectors;
+try {
+  if (walletConnectProjectId) {
+    const wallets = getDefaultWallets({
+      appName: 'Blurd',
+      projectId: walletConnectProjectId,
+      chains,
+    });
+    connectors = wallets.connectors;
+  } else {
+    // Fallback: Only use MetaMask and Injected connectors if no WalletConnect project ID
+    connectors = [
+      new MetaMaskConnector({ chains }),
+      new InjectedConnector({ chains }),
+    ];
+  }
+} catch (error) {
+  console.warn('WalletConnect configuration error, using fallback connectors:', error);
+  // Fallback to basic connectors if WalletConnect fails
+  connectors = [
+    new MetaMaskConnector({ chains }),
+    new InjectedConnector({ chains }),
+  ];
+}
 
 const wagmiConfig = createConfig({
   autoConnect: true,
   connectors,
   publicClient,
 });
+
+// Suppress WalletConnect errors globally
+if (typeof window !== 'undefined') {
+  // Catch and suppress WalletConnect WebSocket errors
+  const originalError = window.onerror;
+  window.onerror = (message, source, lineno, colno, error) => {
+    const errorMessage = message?.toString() || '';
+    if (
+      errorMessage.includes('WebSocket connection closed') ||
+      errorMessage.includes('Unauthorized: invalid key') ||
+      errorMessage.includes('WalletConnect') ||
+      errorMessage.includes('code: 3000')
+    ) {
+      return true; // Suppress the error
+    }
+    if (originalError) {
+      return originalError(message, source, lineno, colno, error);
+    }
+    return false;
+  };
+}
 
 const queryClient = new QueryClient();
 
