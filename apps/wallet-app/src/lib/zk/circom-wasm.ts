@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Circom/SnarkJS Integration for Age Proof
  * 

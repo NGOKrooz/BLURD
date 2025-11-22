@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Noir WASM Integration for Age Proof
  * 

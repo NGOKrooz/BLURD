@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * ZK Proof Generation and Verification Utilities
  * Client-side proof generation using Circom + snarkjs

@@ -3,7 +3,8 @@
   "rules": {
     "react/no-unescaped-entities": "warn",
     "jsx-a11y/alt-text": "warn",
-    "@typescript-eslint/no-explicit-any": "off"
+    "@typescript-eslint/no-explicit-any": "off",
+    "@next/next/no-img-element": "warn"
   }
 }
 
