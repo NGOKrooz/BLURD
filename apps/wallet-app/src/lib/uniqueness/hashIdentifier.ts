@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Hash unique identifier for uniqueness proof
  * Uses Poseidon hash for compatibility with ZK circuits
@@ -6,6 +8,9 @@
 /**
  * Hash a unique identifier string
  * Returns a hash suitable for use in ZK circuits
+ * 
+ * @param value - The unique identifier string to hash
+ * @returns A hex string prefixed with '0x'
  */
 export async function hashIdentifier(value: string): Promise<string> {
   if (!value || value.trim().length === 0) {
@@ -18,26 +23,32 @@ export async function hashIdentifier(value: string): Promise<string> {
     
     // Convert string to array of field elements
     // Poseidon works best with field elements, so we convert each character to its ASCII code
-    // Then hash in chunks if needed
+    // Use lowercase bigint for compatibility
     const chars = value.split('');
-    const asciiInts = chars.map(c => BigInt(c.charCodeAt(0)));
+    const asciiInts: bigint[] = chars.map(c => BigInt(c.charCodeAt(0)));
     
     // Poseidon has limits on input size, so we hash in chunks if needed
     // For simplicity, we'll hash up to 16 characters at a time (Poseidon's typical limit)
     if (asciiInts.length <= 16) {
-      const hash = poseidon(asciiInts);
+      // Type assertion: bigint[] is assignable to (bigint | number | string)[]
+      const input: (bigint | number | string)[] = asciiInts;
+      const hash = poseidon(input);
       return '0x' + hash.toString(16).padStart(64, '0');
     } else {
       // For longer strings, hash in chunks and combine
       // This is a simplified approach - in production, use a proper Merkle tree or hierarchical hashing
-      const chunks: BigInt[] = [];
+      const chunks: bigint[] = [];
+      
       for (let i = 0; i < asciiInts.length; i += 16) {
         const chunk = asciiInts.slice(i, i + 16);
         // Pad chunk to 16 elements with zeros if needed
-        while (chunk.length < 16) {
-          chunk.push(BigInt(0));
+        const paddedChunk: bigint[] = [...chunk];
+        while (paddedChunk.length < 16) {
+          paddedChunk.push(BigInt(0));
         }
-        const chunkHash = poseidon(chunk);
+        // Type assertion: bigint[] is assignable to (bigint | number | string)[]
+        const input: (bigint | number | string)[] = paddedChunk;
+        const chunkHash = poseidon(input);
         chunks.push(chunkHash);
       }
       
@@ -46,14 +57,22 @@ export async function hashIdentifier(value: string): Promise<string> {
         return '0x' + chunks[0].toString(16).padStart(64, '0');
       }
       
-      // Combine chunks
-      while (chunks.length < 16) {
-        chunks.push(BigInt(0));
+      // Combine chunks - pad to 16 elements
+      const paddedChunks: bigint[] = [...chunks];
+      while (paddedChunks.length < 16) {
+        paddedChunks.push(BigInt(0));
       }
-      const finalHash = poseidon(chunks.slice(0, 16));
+      
+      // Take first 16 chunks and ensure proper typing
+      const finalChunks = paddedChunks.slice(0, 16);
+      // Explicitly map to ensure proper type inference
+      // Type assertion: bigint[] is assignable to (bigint | number | string)[]
+      const input: (bigint | number | string)[] = finalChunks.map(n => n as bigint);
+      const finalHash = poseidon(input);
       return '0x' + finalHash.toString(16).padStart(64, '0');
     }
   } catch (error) {
+    // Log the error for debugging but don't swallow it
     console.warn('Poseidon unavailable, falling back to SHA-256:', error);
     // Fallback to SHA-256 if Poseidon unavailable
     return await hashIdentifierSHA256(value);
@@ -62,6 +81,9 @@ export async function hashIdentifier(value: string): Promise<string> {
 
 /**
  * Hash identifier using SHA-256 (fallback)
+ * 
+ * @param value - The identifier string to hash
+ * @returns A hex string prefixed with '0x'
  */
 async function hashIdentifierSHA256(value: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -74,6 +96,9 @@ async function hashIdentifierSHA256(value: string): Promise<string> {
 /**
  * Extract primary unique identifier from ExtractedFields
  * Priority: documentNumber > voterNumber > passportNumber > serialNumber
+ * 
+ * @param fields - The extracted fields object
+ * @returns The primary identifier string or null if none found
  */
 export function extractPrimaryIdentifier(fields: {
   documentNumber?: string;
@@ -81,18 +106,17 @@ export function extractPrimaryIdentifier(fields: {
   passportNumber?: string;
   serialNumber?: string;
 }): string | null {
-  if (fields.documentNumber) {
+  if (fields.documentNumber && fields.documentNumber.trim().length > 0) {
     return fields.documentNumber;
   }
-  if (fields.voterNumber) {
+  if (fields.voterNumber && fields.voterNumber.trim().length > 0) {
     return fields.voterNumber;
   }
-  if (fields.passportNumber) {
+  if (fields.passportNumber && fields.passportNumber.trim().length > 0) {
     return fields.passportNumber;
   }
-  if (fields.serialNumber) {
+  if (fields.serialNumber && fields.serialNumber.trim().length > 0) {
     return fields.serialNumber;
   }
   return null;
 }
-

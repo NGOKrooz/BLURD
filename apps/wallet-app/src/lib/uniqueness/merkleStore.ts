@@ -37,18 +37,21 @@ export async function computeMerkleRoot(leaves: string[]): Promise<string> {
     const { poseidon2 } = await import('poseidon-lite');
     
     // Pair up leaves and hash them
-    let currentLevel = leaves.map(leaf => BigInt(leaf));
+    // Use lowercase bigint for TypeScript compatibility
+    let currentLevel: bigint[] = leaves.map(leaf => BigInt(leaf));
     
     while (currentLevel.length > 1) {
-      const nextLevel: BigInt[] = [];
+      const nextLevel: bigint[] = [];
       for (let i = 0; i < currentLevel.length; i += 2) {
         if (i + 1 < currentLevel.length) {
-          // Hash pair
-          const pairHash = poseidon2([currentLevel[i], currentLevel[i + 1]]);
+          // Hash pair - ensure proper type
+          const input: (bigint | number | string)[] = [currentLevel[i], currentLevel[i + 1]];
+          const pairHash = poseidon2(input);
           nextLevel.push(pairHash);
         } else {
           // Odd leaf, hash with itself
-          const selfHash = poseidon2([currentLevel[i], currentLevel[i]]);
+          const input: (bigint | number | string)[] = [currentLevel[i], currentLevel[i]];
+          const selfHash = poseidon2(input);
           nextLevel.push(selfHash);
         }
       }
