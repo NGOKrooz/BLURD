@@ -1,0 +1,9 @@
+[package]
+name = "blurd_age_proof"
+type = "bin"
+authors = ["Blurd Team"]
+compiler_version = ">=0.20.0"
+
+[dependencies]
+
+

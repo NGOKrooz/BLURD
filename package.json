@@ -10,7 +10,12 @@
     "dev:wallet": "cd apps/wallet-app && npm run dev",
     "dev:merchant": "cd apps/merchant-dashboard && npm run dev",
     "dev:api": "cd apps/api && npm run dev",
-    "build:zk": "node scripts/build-zk.js",
+    "build:zk": "node scripts/zk-build.js",
+    "zk:build": "node scripts/zk-build.js",
+    "setup:age-proof": "node scripts/setup-age-proof.js",
+    "setup:country-proof": "node scripts/setup-country-proof.js",
+    "setup:uniqueness-proof": "node scripts/setup-uniqueness-proof.js",
+    "setup:all-proofs": "npm run setup:age-proof && npm run setup:country-proof && npm run setup:uniqueness-proof",
     "install:all": "npm install && cd apps/wallet-app && npm install && cd ../merchant-dashboard && npm install && cd ../api && npm install"
   },
   "devDependencies": {

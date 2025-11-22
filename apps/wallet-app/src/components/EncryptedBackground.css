@@ -1,0 +1,14 @@
+/* Encrypted Background Styles */
+@keyframes subtle-pulse {
+  0%, 100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.encrypted-bg-blob {
+  animation: subtle-pulse 8s ease-in-out infinite;
+}
+
