@@ -88,20 +88,20 @@ export default function VerifyPayment() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="mb-6">
+    <div className="w-full max-w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 overflow-x-hidden">
+      <div className="mb-4 sm:mb-6">
         <Link
           href="/payments"
-          className="inline-flex items-center text-sm text-gray-400 hover:text-white transition-colors"
+          className="inline-flex items-center text-xs sm:text-sm text-gray-400 hover:text-white transition-colors touch-manipulation min-h-[44px]"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Payments
+          <ArrowLeft className="h-4 w-4 mr-2 flex-shrink-0" />
+          <span>Back to Payments</span>
         </Link>
       </div>
 
-      <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-8">
-        <h1 className="text-2xl font-semibold text-white mb-2">Verify Incoming Payment</h1>
-        <p className="text-sm text-gray-400 mb-6">
+      <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-4 sm:p-6 lg:p-8 overflow-x-hidden">
+        <h1 className="text-xl sm:text-2xl font-semibold text-white mb-2">Verify Incoming Payment</h1>
+        <p className="text-xs sm:text-sm text-gray-400 mb-4 sm:mb-6 break-words">
           Upload a privacy-preserving payment-proof.json file to verify a payment without exposing sensitive data
         </p>
 
@@ -230,10 +230,10 @@ export default function VerifyPayment() {
         <div className="space-y-6">
           {/* Upload File */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
               Upload payment-proof.json
             </label>
-            <div className="border border-white/10 border-dashed rounded-lg p-6 text-center">
+            <div className="border border-white/10 border-dashed rounded-lg p-4 sm:p-6 text-center touch-manipulation">
               <input
                 type="file"
                 accept=".json"
@@ -243,25 +243,25 @@ export default function VerifyPayment() {
               />
               <label
                 htmlFor="payment-proof-file"
-                className="cursor-pointer flex flex-col items-center space-y-2"
+                className="cursor-pointer flex flex-col items-center space-y-2 min-h-[44px] justify-center"
               >
-                <Upload className="h-8 w-8 text-gray-400" />
-                <span className="text-sm text-gray-400">
+                <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 flex-shrink-0" />
+                <span className="text-xs sm:text-sm text-gray-400 break-words px-2">
                   {proofFile ? proofFile.name : 'Click to upload payment-proof.json'}
                 </span>
               </label>
             </div>
             {proofFile && (
-              <div className="mt-2 flex items-center space-x-2 text-xs text-gray-400">
-                <FileText className="h-4 w-4" />
-                <span>{proofFile.name}</span>
+              <div className="mt-2 flex items-center space-x-2 text-xs text-gray-400 gap-2">
+                <FileText className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate flex-1 min-w-0">{proofFile.name}</span>
               </div>
             )}
           </div>
 
           {/* Required Amount (Optional) */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
               Required Amount (Optional)
             </label>
             <input
@@ -271,9 +271,9 @@ export default function VerifyPayment() {
               placeholder="0.00"
               step="0.0001"
               min="0"
-              className="block w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              className="block w-full rounded-md border border-white/10 bg-white/5 px-3 py-2.5 sm:py-2 text-xs sm:text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none min-h-[44px] touch-manipulation"
             />
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="mt-1 text-xs text-gray-400 break-words">
               Leave empty to verify any amount. If specified, the payment proof&apos;s requiredAmount must match exactly.
             </p>
           </div>
@@ -282,14 +282,14 @@ export default function VerifyPayment() {
           <button
             onClick={handleVerify}
             disabled={verifying || !proofFile}
-            className={`w-full rounded-md px-6 py-3 text-sm font-semibold text-white transition-colors flex items-center justify-center space-x-2 ${
+            className={`w-full rounded-md px-4 sm:px-6 py-3 text-xs sm:text-sm font-semibold text-white transition-colors flex items-center justify-center space-x-2 touch-manipulation min-h-[44px] ${
               verifying || !proofFile
                 ? 'bg-gray-600 cursor-not-allowed'
                 : 'bg-blue-600 hover:bg-blue-700'
             }`}
           >
-            <Key className="h-4 w-4" />
-            <span>{verifying ? 'Verifying...' : 'VERIFY PAYMENT'}</span>
+            <Key className="h-4 w-4 flex-shrink-0" />
+            <span className="truncate">{verifying ? 'Verifying...' : 'VERIFY PAYMENT'}</span>
           </button>
 
           {/* Privacy Note */}
@@ -309,7 +309,7 @@ export default function VerifyPayment() {
 
         {/* Upload Another Button (after verification) */}
         {verificationResult && (
-          <div className="mt-6">
+          <div className="mt-4 sm:mt-6">
             <button
               onClick={() => {
                 setProofFile(null);
@@ -318,7 +318,7 @@ export default function VerifyPayment() {
                 setPaymentProof(null);
                 setError(null);
               }}
-              className="w-full rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
+              className="w-full rounded-md border border-white/10 bg-white/5 px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:bg-white/10 transition-colors touch-manipulation min-h-[44px]"
             >
               Upload Another Proof
             </button>

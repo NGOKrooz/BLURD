@@ -149,30 +149,32 @@ export default function SendPayment() {
   const uniquenessProofs = availableProofs.filter((p) => p.circuitType === 'uniqueness');
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="mb-6">
+    <div className="w-full max-w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 overflow-x-hidden">
+      <div className="mb-4 sm:mb-6">
         <Link
           href="/payments"
-          className="inline-flex items-center text-sm text-gray-400 hover:text-white transition-colors"
+          className="inline-flex items-center text-xs sm:text-sm text-gray-400 hover:text-white transition-colors touch-manipulation min-h-[44px]"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Payments
+          <ArrowLeft className="h-4 w-4 mr-2 flex-shrink-0" />
+          <span>Back to Payments</span>
         </Link>
       </div>
 
-      <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-8">
-        <h1 className="text-2xl font-semibold text-white mb-2">Send Private Payment</h1>
-        <p className="text-sm text-gray-400 mb-6">
+      <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-4 sm:p-6 lg:p-8 overflow-x-hidden">
+        <h1 className="text-xl sm:text-2xl font-semibold text-white mb-2">Send Private Payment</h1>
+        <p className="text-xs sm:text-sm text-gray-400 mb-4 sm:mb-6 break-words">
           Send a private payment and optionally bind it to a ZK identity proof
         </p>
 
         {!isConnected && (
-          <div className="mb-6 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-yellow-300 mb-2">Connect your wallet to send payments</p>
+          <div className="mb-4 sm:mb-6 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm text-yellow-300 mb-1 sm:mb-2">Connect your wallet to send payments</p>
               </div>
-              <ConnectButton />
+              <div className="flex-shrink-0">
+                <ConnectButton />
+              </div>
             </div>
           </div>
         )}
@@ -257,10 +259,10 @@ export default function SendPayment() {
               </div>
             </div>
 
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <Link
                 href="/payments"
-                className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors text-center"
+                className="flex-1 rounded-md bg-blue-600 px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:bg-blue-700 transition-colors text-center touch-manipulation min-h-[44px] flex items-center justify-center"
               >
                 Back to Payments
               </Link>
@@ -275,7 +277,7 @@ export default function SendPayment() {
                   setProofHash(null);
                   setError(null);
                 }}
-                className="flex-1 rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
+                className="flex-1 rounded-md border border-white/10 bg-white/5 px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:bg-white/10 transition-colors touch-manipulation min-h-[44px]"
               >
                 Send Another
               </button>
@@ -285,19 +287,19 @@ export default function SendPayment() {
           <div className="space-y-6">
             {/* Recipient Address */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Recipient Address</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">Recipient Address</label>
               <input
                 type="text"
                 value={recipient}
                 onChange={(e) => setRecipient(e.target.value)}
                 placeholder="0x..."
-                className="block w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none font-mono"
+                className="block w-full rounded-md border border-white/10 bg-white/5 px-3 py-2.5 sm:py-2 text-xs sm:text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none font-mono min-h-[44px] touch-manipulation"
               />
             </div>
 
             {/* Amount */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Amount (MATIC)</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">Amount (MATIC)</label>
               <input
                 type="number"
                 value={amount}
@@ -305,13 +307,13 @@ export default function SendPayment() {
                 placeholder="0.00"
                 step="0.0001"
                 min="0"
-                className="block w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+                className="block w-full rounded-md border border-white/10 bg-white/5 px-3 py-2.5 sm:py-2 text-xs sm:text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none min-h-[44px] touch-manipulation"
               />
             </div>
 
             {/* Attach ZK Identity Proof */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                 Attach ZK Identity Proof (Optional)
               </label>
               <select
@@ -320,7 +322,7 @@ export default function SendPayment() {
                   const value = e.target.value;
                   setProofType(value ? (value as 'age' | 'nationality' | 'uniqueness') : null);
                 }}
-                className="block w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                className="block w-full rounded-md border border-white/10 bg-white/5 px-3 py-2.5 sm:py-2 text-xs sm:text-sm text-white focus:border-blue-500 focus:outline-none min-h-[44px] touch-manipulation"
               >
                 <option value="">None</option>
                 <option value="age" disabled={ageProofs.length === 0}>
@@ -343,14 +345,14 @@ export default function SendPayment() {
             {/* Proof Hash (Auto-filled) */}
             {proofHash && (
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Proof Hash (Auto-filled)</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">Proof Hash (Auto-filled)</label>
                 <input
                   type="text"
                   value={proofHash}
                   readOnly
-                  className="block w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-gray-400 font-mono cursor-not-allowed"
+                  className="block w-full rounded-md border border-white/10 bg-white/5 px-3 py-2.5 sm:py-2 text-xs sm:text-sm text-gray-400 font-mono cursor-not-allowed break-all min-h-[44px]"
                 />
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-gray-400 break-words">
                   This hash is calculated using keccak256(proof.type + proof.output)
                 </p>
               </div>
@@ -360,14 +362,14 @@ export default function SendPayment() {
             <button
               onClick={handleSendPayment}
               disabled={sending || !isConnected || !recipient || !amount}
-              className={`w-full rounded-md px-6 py-3 text-sm font-semibold text-white transition-colors flex items-center justify-center space-x-2 ${
+              className={`w-full rounded-md px-4 sm:px-6 py-3 text-xs sm:text-sm font-semibold text-white transition-colors flex items-center justify-center space-x-2 touch-manipulation min-h-[44px] ${
                 sending || !isConnected || !recipient || !amount
                   ? 'bg-gray-600 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700'
               }`}
             >
-              <Send className="h-4 w-4" />
-              <span>{sending ? 'Processing...' : 'SEND PRIVATE PAYMENT'}</span>
+              <Send className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate">{sending ? 'Processing...' : 'SEND PRIVATE PAYMENT'}</span>
             </button>
 
             {/* Privacy Note */}

@@ -81,15 +81,15 @@ export default function CredentialUpload({ onExtract, onError }: CredentialUploa
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full max-w-full overflow-x-hidden">
       {/* File Upload Area */}
       {!file ? (
         <div
-          className="border-2 border-dashed border-gray-600 rounded-lg p-12 text-center cursor-pointer hover:border-blue-500 transition-colors"
+          className="border-2 border-dashed border-gray-600 rounded-lg p-6 sm:p-8 lg:p-12 text-center cursor-pointer hover:border-blue-500 transition-colors touch-manipulation"
           onClick={() => fileInputRef.current?.click()}
         >
-          <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-sm text-gray-400 mb-2">
+          <Upload className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+          <p className="text-xs sm:text-sm text-gray-400 mb-2 px-2">
             Drag and drop your ID document here, or click to browse
           </p>
           <button
@@ -97,29 +97,30 @@ export default function CredentialUpload({ onExtract, onError }: CredentialUploa
               e.stopPropagation();
               fileInputRef.current?.click();
             }}
-            className="text-sm text-blue-400 hover:text-blue-300"
+            className="text-xs sm:text-sm text-blue-400 hover:text-blue-300 px-3 py-2 rounded-md hover:bg-blue-500/10 transition-colors touch-manipulation min-h-[44px]"
           >
             Choose File
           </button>
-          <p className="text-xs text-gray-500 mt-4">
+          <p className="text-xs text-gray-500 mt-3 sm:mt-4">
             Supported: JPEG, PNG
           </p>
         </div>
       ) : (
         <div className="space-y-4">
           {/* File Info */}
-          <div className="flex items-center justify-between p-4 bg-neutral-900/40 rounded-lg border border-white/10">
-            <div className="flex items-center space-x-2">
+          <div className="flex items-center justify-between p-3 sm:p-4 bg-neutral-900/40 rounded-lg border border-white/10 gap-2">
+            <div className="flex items-center space-x-2 min-w-0 flex-1">
               {file.type.startsWith('image/') ? (
-                <Image className="h-6 w-6 text-blue-400" aria-label="Image file" />
+                <Image className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400 flex-shrink-0" aria-label="Image file" />
               ) : (
-                <File className="h-6 w-6 text-blue-400" aria-label="File" />
+                <File className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400 flex-shrink-0" aria-label="File" />
               )}
-              <span className="text-sm text-white">{file.name}</span>
+              <span className="text-xs sm:text-sm text-white truncate">{file.name}</span>
             </div>
             <button
               onClick={handleReset}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-white transition-colors flex-shrink-0 p-1 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="Remove file"
             >
               <X className="h-5 w-5" />
             </button>
@@ -127,86 +128,86 @@ export default function CredentialUpload({ onExtract, onError }: CredentialUploa
 
           {/* Extraction Status */}
           {extracting ? (
-            <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-              <p className="text-sm text-blue-300">{progressText}</p>
+            <div className="p-3 sm:p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg overflow-x-hidden">
+              <p className="text-xs sm:text-sm text-blue-300 break-words">{progressText}</p>
             </div>
           ) : Object.keys(extractedFields).length > 0 ? (
-            <div className="space-y-3 p-4 bg-neutral-900/40 rounded-lg border border-white/10">
+            <div className="space-y-3 p-3 sm:p-4 bg-neutral-900/40 rounded-lg border border-white/10 overflow-x-hidden">
               <p className="text-xs font-semibold text-green-400 mb-3">Extracted Details:</p>
               
               {/* Date of Birth */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Date of Birth:</span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-gray-400 flex-shrink-0">Date of Birth:</span>
                 {extractedFields.dob ? (
-                  <span className="text-xs text-green-300">{formatDate(extractedFields.dob)}</span>
+                  <span className="text-xs text-green-300 text-right break-words">{formatDate(extractedFields.dob)}</span>
                 ) : (
-                  <span className="text-xs text-yellow-400">Not detected</span>
+                  <span className="text-xs text-yellow-400 text-right">Not detected</span>
                 )}
               </div>
 
               {/* Age */}
               {extractedFields.age !== undefined && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">Age:</span>
-                  <span className="text-xs text-green-300">{extractedFields.age}</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-gray-400 flex-shrink-0">Age:</span>
+                  <span className="text-xs text-green-300 text-right">{extractedFields.age}</span>
                 </div>
               )}
 
               {/* Country */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Country:</span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-gray-400 flex-shrink-0">Country:</span>
                 {extractedFields.country ? (
-                  <span className="text-xs text-green-300">
+                  <span className="text-xs text-green-300 text-right break-words">
                     {extractedFields.country} {extractedFields.countryCode && `(${extractedFields.countryCode})`}
                   </span>
                 ) : (
-                  <span className="text-xs text-yellow-400">Not detected</span>
+                  <span className="text-xs text-yellow-400 text-right">Not detected</span>
                 )}
               </div>
 
               {/* Nationality */}
               {extractedFields.nationality && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">Nationality:</span>
-                  <span className="text-xs text-green-300">{extractedFields.nationality}</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-gray-400 flex-shrink-0">Nationality:</span>
+                  <span className="text-xs text-green-300 text-right break-words">{extractedFields.nationality}</span>
                 </div>
               )}
 
               {/* Document Number */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Document Number:</span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-gray-400 flex-shrink-0">Document Number:</span>
                 {extractedFields.documentNumber ? (
-                  <span className="text-xs text-green-300 font-mono">{extractedFields.documentNumber}</span>
+                  <span className="text-xs text-green-300 font-mono text-right break-all">{extractedFields.documentNumber}</span>
                 ) : (
-                  <span className="text-xs text-yellow-400">Not detected</span>
+                  <span className="text-xs text-yellow-400 text-right">Not detected</span>
                 )}
               </div>
 
               {/* Valid Until */}
               {extractedFields.expiry && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">Valid Until:</span>
-                  <span className="text-xs text-green-300">{formatDate(extractedFields.expiry)}</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-gray-400 flex-shrink-0">Valid Until:</span>
+                  <span className="text-xs text-green-300 text-right break-words">{formatDate(extractedFields.expiry)}</span>
                 </div>
               )}
 
               {/* Retry Button */}
               <button
                 onClick={handleReset}
-                className="w-full mt-4 flex items-center justify-center space-x-2 px-4 py-2 text-sm text-blue-400 hover:text-blue-300 border border-blue-500/20 rounded-lg hover:bg-blue-500/10 transition-colors"
+                className="w-full mt-3 sm:mt-4 flex items-center justify-center space-x-2 px-4 py-2.5 sm:py-2 text-xs sm:text-sm text-blue-400 hover:text-blue-300 border border-blue-500/20 rounded-lg hover:bg-blue-500/10 transition-colors touch-manipulation min-h-[44px]"
               >
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className="h-4 w-4 flex-shrink-0" />
                 <span>Upload Another Document</span>
               </button>
             </div>
           ) : (
-            <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-              <p className="text-xs text-yellow-300">
+            <div className="p-3 sm:p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg overflow-x-hidden">
+              <p className="text-xs text-yellow-300 break-words mb-3">
                 No details could be extracted. Please ensure the document is clear and contains visible text.
               </p>
               <button
                 onClick={handleReset}
-                className="mt-3 text-xs text-yellow-400 hover:text-yellow-300"
+                className="text-xs text-yellow-400 hover:text-yellow-300 touch-manipulation min-h-[44px] px-3 py-2 rounded-md hover:bg-yellow-500/10 transition-colors"
               >
                 Try another document
               </button>

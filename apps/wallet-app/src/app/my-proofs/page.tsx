@@ -410,19 +410,19 @@ export default function MyProofs() {
   // Prevent hydration mismatch by not rendering client-side content until mounted
   if (!mounted) {
     return (
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="mb-6">
-          <Link href="/" className="text-sm text-gray-400 hover:text-white">
+      <div className="w-full max-w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 overflow-x-hidden">
+        <div className="mb-4 sm:mb-6">
+          <Link href="/" className="text-xs sm:text-sm text-gray-400 hover:text-white">
             Back to Dashboard
           </Link>
         </div>
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-white mb-2">My Proofs</h1>
-          <p className="text-sm text-gray-400">Manage your zero-knowledge identity proofs</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-xl sm:text-2xl font-semibold text-white mb-2">My Proofs</h1>
+          <p className="text-xs sm:text-sm text-gray-400">Manage your zero-knowledge identity proofs</p>
         </div>
-        <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-8">
+        <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-6 sm:p-8">
           <div className="text-center py-8">
-            <p className="text-sm text-gray-400">Loading...</p>
+            <p className="text-xs sm:text-sm text-gray-400">Loading...</p>
           </div>
         </div>
       </div>
@@ -430,35 +430,37 @@ export default function MyProofs() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="mb-6">
-        <Link href="/" className="text-sm text-gray-400 hover:text-white">
+    <div className="w-full max-w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 overflow-x-hidden">
+      <div className="mb-4 sm:mb-6">
+        <Link href="/" className="text-xs sm:text-sm text-gray-400 hover:text-white">
           Back to Dashboard
         </Link>
       </div>
 
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-white mb-2">My Proofs</h1>
-        <p className="text-sm text-gray-400">Manage your zero-knowledge identity proofs</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl sm:text-2xl font-semibold text-white mb-2">My Proofs</h1>
+        <p className="text-xs sm:text-sm text-gray-400">Manage your zero-knowledge identity proofs</p>
       </div>
 
       {!isConnected && (
-        <div className="mb-6 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-yellow-300 mb-2">Connect your wallet to use proof features</p>
+        <div className="mb-4 sm:mb-6 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm text-yellow-300 mb-1 sm:mb-2">Connect your wallet to use proof features</p>
             </div>
-            <ConnectButton />
+            <div className="flex-shrink-0">
+              <ConnectButton />
+            </div>
           </div>
         </div>
       )}
 
       {/* Tabs */}
-      <div className="mb-6 border-b border-white/10">
-        <div className="flex space-x-1">
+      <div className="mb-4 sm:mb-6 border-b border-white/10 overflow-x-auto">
+        <div className="flex space-x-1 min-w-max sm:min-w-0 pb-2 sm:pb-0">
           <button
             onClick={() => setActiveTab('issue')}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
+            className={`px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap min-h-[44px] touch-manipulation ${
               activeTab === 'issue'
                 ? 'border-b-2 border-blue-500 text-white'
                 : 'text-gray-400 hover:text-white'
@@ -468,7 +470,7 @@ export default function MyProofs() {
           </button>
           <button
             onClick={() => setActiveTab('generate')}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
+            className={`px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap min-h-[44px] touch-manipulation ${
               activeTab === 'generate'
                 ? 'border-b-2 border-blue-500 text-white'
                 : 'text-gray-400 hover:text-white'
@@ -481,7 +483,7 @@ export default function MyProofs() {
               setActiveTab('stored');
               loadStoredProofsList();
             }}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
+            className={`px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap min-h-[44px] touch-manipulation ${
               activeTab === 'stored'
                 ? 'border-b-2 border-blue-500 text-white'
                 : 'text-gray-400 hover:text-white'
@@ -489,14 +491,14 @@ export default function MyProofs() {
           >
             My Stored Proofs
             {mounted && storedProofs.length > 0 && (
-              <span className="ml-2 text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">
+              <span className="ml-1.5 sm:ml-2 text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">
                 {storedProofs.length}
               </span>
             )}
           </button>
           <button
             onClick={() => setActiveTab('verify')}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
+            className={`px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap min-h-[44px] touch-manipulation ${
               activeTab === 'verify'
                 ? 'border-b-2 border-blue-500 text-white'
                 : 'text-gray-400 hover:text-white'
@@ -509,7 +511,7 @@ export default function MyProofs() {
 
       {/* Issue New Proof Tab */}
       {activeTab === 'issue' && (
-        <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-8">
+        <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-4 sm:p-6 lg:p-8 overflow-x-hidden">
           {issued ? (
             <div className="text-center space-y-4">
               <CheckCircle2 className="h-16 w-16 text-green-400 mx-auto mb-4 animate-pulse" />
@@ -594,13 +596,13 @@ export default function MyProofs() {
                   issuing || 
                   !extractedFields.dob?.trim()
                 }
-                className={`w-full rounded-md px-6 py-4 text-sm font-semibold text-white transition-all flex items-center justify-center space-x-2 ${
+                className={`w-full rounded-md px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-white transition-all flex items-center justify-center space-x-2 touch-manipulation ${
                   issuing || !extractedFields.dob?.trim()
                     ? 'bg-gray-600 cursor-not-allowed opacity-50'
                     : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]'
                 }`}
                 style={{ 
-                  minHeight: '48px',
+                  minHeight: '44px',
                   cursor: issuing || !extractedFields.dob?.trim()
                     ? 'not-allowed' 
                     : 'pointer'
@@ -628,7 +630,7 @@ export default function MyProofs() {
 
       {/* Generate from Credential Tab */}
       {activeTab === 'generate' && (
-        <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-8">
+        <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-4 sm:p-6 lg:p-8 overflow-x-hidden">
           {generatedProof ? (
             <div className="space-y-4">
               <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 flex items-center space-x-3">
@@ -696,48 +698,48 @@ export default function MyProofs() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-4">Choose Proof Type</label>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                       <button
                         onClick={() => setProofType('age18')}
-                        className={`p-6 rounded-lg border transition-colors text-left ${
+                        className={`p-4 sm:p-6 rounded-lg border transition-colors text-left touch-manipulation min-h-[100px] ${
                           proofType === 'age18'
                             ? 'border-blue-500 bg-blue-500/10'
                             : 'border-white/10 bg-white/5 hover:bg-white/10'
                         }`}
                       >
-                        <div className="flex items-center space-x-3 mb-2">
-                          <Calendar className="h-5 w-5 text-blue-400" />
-                          <span className="font-semibold text-white">Age Verification</span>
+                        <div className="flex items-center space-x-2 sm:space-x-3 mb-2">
+                          <Calendar className="h-5 w-5 text-blue-400 flex-shrink-0" />
+                          <span className="font-semibold text-white text-sm sm:text-base">Age Verification</span>
                         </div>
                         <p className="text-xs text-gray-400">Prove you are 18 or older</p>
                       </button>
 
                       <button
                         onClick={() => setProofType('country')}
-                        className={`p-6 rounded-lg border transition-colors text-left ${
+                        className={`p-4 sm:p-6 rounded-lg border transition-colors text-left touch-manipulation min-h-[100px] ${
                           proofType === 'country'
                             ? 'border-green-500 bg-green-500/10'
                             : 'border-white/10 bg-white/5 hover:bg-white/10'
                         }`}
                       >
-                        <div className="flex items-center space-x-3 mb-2">
-                          <Globe className="h-5 w-5 text-green-400" />
-                          <span className="font-semibold text-white">Nationality</span>
+                        <div className="flex items-center space-x-2 sm:space-x-3 mb-2">
+                          <Globe className="h-5 w-5 text-green-400 flex-shrink-0" />
+                          <span className="font-semibold text-white text-sm sm:text-base">Nationality</span>
                         </div>
                         <p className="text-xs text-gray-400">Prove country membership</p>
                       </button>
 
                       <button
                         onClick={() => setProofType('uniqueness')}
-                        className={`p-6 rounded-lg border transition-colors text-left ${
+                        className={`p-4 sm:p-6 rounded-lg border transition-colors text-left touch-manipulation min-h-[100px] sm:col-span-2 md:col-span-1 ${
                           proofType === 'uniqueness'
                             ? 'border-purple-500 bg-purple-500/10'
                             : 'border-white/10 bg-white/5 hover:bg-white/10'
                         }`}
                       >
-                        <div className="flex items-center space-x-3 mb-2">
-                          <User className="h-5 w-5 text-purple-400" />
-                          <span className="font-semibold text-white">Human Uniqueness</span>
+                        <div className="flex items-center space-x-2 sm:space-x-3 mb-2">
+                          <User className="h-5 w-5 text-purple-400 flex-shrink-0" />
+                          <span className="font-semibold text-white text-sm sm:text-base">Human Uniqueness</span>
                         </div>
                         <p className="text-xs text-gray-400">Generate uniqueness proof</p>
                       </button>
@@ -910,7 +912,7 @@ export default function MyProofs() {
                       (proofType === 'country' && !selectedCredential?.fields?.countryCode) ||
                       (proofType === 'uniqueness' && !extractPrimaryIdentifier(selectedCredential?.fields || {}))
                     }
-                    className={`w-full rounded-md px-6 py-3 text-sm font-semibold text-white transition-colors flex items-center justify-center space-x-2 ${
+                    className={`w-full rounded-md px-4 sm:px-6 py-3 text-xs sm:text-sm font-semibold text-white transition-colors flex items-center justify-center space-x-2 touch-manipulation min-h-[44px] ${
                       generating || 
                       !proofType || 
                       (proofType === 'age18' && (!selectedCredential?.fields?.dob || !ageInfo.is18Plus)) ||
@@ -920,8 +922,8 @@ export default function MyProofs() {
                         : 'bg-blue-600 hover:bg-blue-700'
                     }`}
                   >
-                    <Shield className="h-4 w-4" />
-                    <span>{generating ? 'Generating Proof...' : 'Generate Proof'}</span>
+                    <Shield className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">{generating ? 'Generating Proof...' : 'Generate Proof'}</span>
                   </button>
                 </>
               )}
@@ -932,7 +934,7 @@ export default function MyProofs() {
 
       {/* My Stored Proofs Tab */}
       {activeTab === 'stored' && (
-        <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-8">
+        <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-4 sm:p-6 lg:p-8 overflow-x-hidden">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-white">My Stored Proofs</h2>
             <button
@@ -1006,10 +1008,10 @@ export default function MyProofs() {
 
       {/* Verify Proof Tab (Merchant) */}
       {activeTab === 'verify' && (
-        <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-8">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-white mb-2">Verify Proof (Merchant View)</h2>
-            <p className="text-sm text-gray-400">Upload a proof.json file to verify its validity</p>
+        <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-4 sm:p-6 lg:p-8 overflow-x-hidden">
+          <div className="mb-4 sm:mb-6">
+            <h2 className="text-base sm:text-lg font-semibold text-white mb-2">Verify Proof (Merchant View)</h2>
+            <p className="text-xs sm:text-sm text-gray-400 break-words">Upload a proof.json file to verify its validity</p>
           </div>
 
           {verificationResult && (
@@ -1036,10 +1038,10 @@ export default function MyProofs() {
             </div>
           )}
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Upload proof.json</label>
-              <div className="border border-white/10 border-dashed rounded-lg p-6 text-center">
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">Upload proof.json</label>
+              <div className="border border-white/10 border-dashed rounded-lg p-4 sm:p-6 text-center touch-manipulation">
                 <input
                   type="file"
                   accept=".json"
@@ -1049,40 +1051,40 @@ export default function MyProofs() {
                 />
                 <label
                   htmlFor="proof-file"
-                  className="cursor-pointer flex flex-col items-center space-y-2"
+                  className="cursor-pointer flex flex-col items-center space-y-2 min-h-[44px] justify-center"
                 >
-                  <Upload className="h-8 w-8 text-gray-400" />
-                  <span className="text-sm text-gray-400">
+                  <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 flex-shrink-0" />
+                  <span className="text-xs sm:text-sm text-gray-400 break-words px-2">
                     {proofFile ? proofFile.name : 'Click to upload proof.json'}
                   </span>
                 </label>
               </div>
             </div>
 
-            <div className="text-center text-sm text-gray-400">OR</div>
+            <div className="text-center text-xs sm:text-sm text-gray-400">OR</div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Paste proof JSON</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">Paste proof JSON</label>
               <textarea
                 value={proofJson}
                 onChange={(e) => setProofJson(e.target.value)}
                 placeholder='{"proof": {...}, "publicSignals": [...]}'
                 rows={8}
-                className="block w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none font-mono"
+                className="block w-full rounded-md border border-white/10 bg-white/5 px-3 py-2.5 sm:py-2 text-xs sm:text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none font-mono min-h-[120px] touch-manipulation overflow-x-auto"
               />
             </div>
 
             <button
               onClick={handleVerifyProof}
               disabled={verifying || (!proofFile && !proofJson.trim())}
-              className={`w-full rounded-md px-6 py-3 text-sm font-semibold text-white transition-colors flex items-center justify-center space-x-2 ${
+              className={`w-full rounded-md px-4 sm:px-6 py-3 text-xs sm:text-sm font-semibold text-white transition-colors flex items-center justify-center space-x-2 touch-manipulation min-h-[44px] ${
                 verifying || (!proofFile && !proofJson.trim())
                   ? 'bg-gray-600 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700'
               }`}
             >
-              <Key className="h-4 w-4" />
-              <span>{verifying ? 'Verifying...' : 'Verify Proof'}</span>
+              <Key className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate">{verifying ? 'Verifying...' : 'Verify Proof'}</span>
             </button>
 
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
@@ -1096,8 +1098,8 @@ export default function MyProofs() {
 
       {/* Confirmation Preview Modal */}
       {showPreviewModal && previewData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-neutral-900 border border-white/20 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-neutral-900 border border-white/20 rounded-lg p-4 sm:p-6 max-w-md w-full mx-auto my-auto shadow-xl overflow-x-hidden">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-white flex items-center space-x-2">
                 <Info className="h-5 w-5 text-blue-400" />
@@ -1185,13 +1187,13 @@ export default function MyProofs() {
               </div>
             </div>
             
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <button
                 onClick={() => {
                   setShowPreviewModal(false);
                   setPreviewData(null);
                 }}
-                className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md transition-colors"
+                className="flex-1 px-4 py-2.5 sm:py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md transition-colors text-sm font-semibold touch-manipulation min-h-[44px]"
               >
                 Cancel
               </button>

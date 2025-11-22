@@ -2,12 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   @apply text-white;
   background: #0A0A0F;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 14px;
   line-height: 1.5;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
 }
 
 /* Ensure all select/dropdown elements have dark styling */
