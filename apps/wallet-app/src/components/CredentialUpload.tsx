@@ -43,7 +43,18 @@ export default function CredentialUpload({ onExtract, onError }: CredentialUploa
 
       // Step 2: Extract fields using simple extractor
       setProgressText('Processing extracted text…');
+      
+      // Log OCR text for debugging (only in development)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('OCR Text extracted:', ocrText.substring(0, 500)); // First 500 chars
+      }
+      
       const fields = extractFields(ocrText);
+      
+      // Log extracted fields for debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Extracted fields:', fields);
+      }
       
       // Add document type to fields
       if (documentType) {

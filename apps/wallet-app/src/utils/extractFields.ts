@@ -174,24 +174,29 @@ function extractDocumentNumber(text: string): string | null {
   const excludeWords = ['INDEPENDENT', 'REPUBLIC', 'FEDERAL', 'DEMOCRATIC', 'STATE', 'NATION', 'COUNTRY', 
                         'GOVERNMENT', 'OFFICIAL', 'ISSUED', 'VALID', 'EXPIRY', 'EXPIRES', 'BIRTH', 'DATE'];
   
+  // Normalize text: remove extra spaces, handle OCR artifacts
+  const normalizedText = text.replace(/\s+/g, ' ').trim();
+  
   // Look for labeled patterns first (most reliable)
   // Priority: VIN (Voter Identification Number) for Nigerian Voter ID cards
   const labeledPatterns = [
     // VIN patterns (Nigerian Voter ID) - highest priority, must have numbers
-    /(?:VIN|Voter\s*Identification\s*Number|Voter\s*ID\s*Number|Voter\s*Number)\s*[:\-\.]?\s*([A-Z0-9]{8,20})/gi,
-    // Other document patterns
-    /(?:document|doc|id|identification)\s*(?:number|no|#)\s*[:\-\.]?\s*([A-Z0-9]{6,15})/gi,
-    /(?:passport)\s*(?:number|no|#)\s*[:\-\.]?\s*([A-Z0-9]{6,15})/gi,
-    /(?:serial)\s*(?:number|no|#)\s*[:\-\.]?\s*([A-Z0-9]{4,15})/gi,
-    /(?:ID|ID\s*NO|ID\s*#)\s*[:\-\.]?\s*([A-Z0-9]{6,15})/gi,
-    /(?:license|licence)\s*(?:number|no|#)\s*[:\-\.]?\s*([A-Z0-9]{6,15})/gi,
+    // More flexible: handle OCR spacing issues
+    /(?:VIN|Voter\s*Identification\s*Number|Voter\s*ID\s*Number|Voter\s*Number|Voter\s*ID)\s*[:\-\.\s]*([A-Z0-9]{8,20})/gi,
+    // Other document patterns - more flexible spacing
+    /(?:document|doc|id|identification)\s*(?:number|no|#|num)\s*[:\-\.\s]*([A-Z0-9]{6,20})/gi,
+    /(?:passport)\s*(?:number|no|#|num)\s*[:\-\.\s]*([A-Z0-9]{6,20})/gi,
+    /(?:serial)\s*(?:number|no|#|num)\s*[:\-\.\s]*([A-Z0-9]{4,20})/gi,
+    /(?:ID|ID\s*NO|ID\s*#)\s*[:\-\.\s]*([A-Z0-9]{6,20})/gi,
+    /(?:license|licence)\s*(?:number|no|#|num)\s*[:\-\.\s]*([A-Z0-9]{6,20})/gi,
   ];
   
   for (const pattern of labeledPatterns) {
-    const matches = [...text.matchAll(pattern)];
+    const matches = [...normalizedText.matchAll(pattern)];
     for (const match of matches) {
       if (match[1]) {
-        const candidate = match[1].toUpperCase().replace(/\s+/g, '');
+        // Clean candidate: remove spaces, dashes, dots (common OCR artifacts)
+        let candidate = match[1].toUpperCase().replace(/[\s\-\.]/g, '');
         
         // Exclude common words that are not document numbers
         if (excludeWords.includes(candidate)) {
@@ -201,7 +206,10 @@ function extractDocumentNumber(text: string): string | null {
         // Validate: should be mostly alphanumeric, not a date, and have some uniqueness
         if (candidate.length >= 6 && candidate.length <= 20) {
           // Check if it's not a date
-          const isDate = dates.some(date => candidate.includes(date.replace(/[\/\-\.]/g, '')));
+          const isDate = dates.some(date => {
+            const dateClean = date.replace(/[\/\-\.\s]/g, '');
+            return candidate.includes(dateClean) || dateClean.includes(candidate);
+          });
           if (!isDate) {
             // Check if it has enough uniqueness (mix of letters and numbers, or long enough)
             const hasLetters = /[A-Z]/.test(candidate);
@@ -221,18 +229,25 @@ function extractDocumentNumber(text: string): string | null {
   
   // Fallback: Look for unique alphanumeric sequences that stand out
   // Pattern: 8-20 chars, mix of letters/numbers, not near date keywords
-  const uniquePattern = /\b([A-Z]{2,}[0-9]{3,}|[0-9]{3,}[A-Z]{2,}|[A-Z0-9]{8,20})\b/g;
-  const uniqueMatches = [...text.matchAll(uniquePattern)];
+  // More flexible: handle spaces, dashes, dots (OCR artifacts)
+  const uniquePattern = /\b([A-Z]{2,}[0-9]{3,}|[0-9]{3,}[A-Z]{2,}|[A-Z0-9]{6,20}(?:[\s\-\.][A-Z0-9]{2,})*)\b/g;
+  const uniqueMatches = [...normalizedText.matchAll(uniquePattern)];
   
   // Filter out dates, common words, and common patterns
   const candidates = uniqueMatches
-    .map(m => m[1].toUpperCase().replace(/\s+/g, ''))
+    .map(m => {
+      // Clean: remove spaces, dashes, dots
+      return m[1].toUpperCase().replace(/[\s\-\.]/g, '');
+    })
     .filter(c => {
       if (c.length < 8 || c.length > 20) return false;
       // Exclude common words
       if (excludeWords.includes(c)) return false;
       // Exclude if it looks like a date
-      if (dates.some(date => c.includes(date.replace(/[\/\-\.]/g, '')))) return false;
+      if (dates.some(date => {
+        const dateClean = date.replace(/[\/\-\.\s]/g, '');
+        return c.includes(dateClean) || dateClean.includes(c);
+      })) return false;
       // Must have both letters and numbers for better accuracy (or be very long)
       const hasLetters = /[A-Z]/.test(c);
       const hasNumbers = /[0-9]/.test(c);
@@ -254,6 +269,7 @@ function extractDocumentNumber(text: string): string | null {
  * Extract country from text
  * Looks for full country names like "Federal Republic of Nigeria" or "United States of America"
  * Also checks for flag emojis and nationality labels
+ * More flexible matching to handle OCR variations
  */
 function extractCountry(text: string): { country?: string; countryCode?: string } | null {
   const countries = (countriesData?.countries || []) as Array<{
@@ -264,7 +280,9 @@ function extractCountry(text: string): { country?: string; countryCode?: string 
     aliases?: string[];
   }>;
   
-  const lowerText = text.toLowerCase();
+  // Normalize text: remove extra spaces, handle OCR artifacts
+  const normalizedText = text.replace(/\s+/g, ' ').trim();
+  const lowerText = normalizedText.toLowerCase();
   
   // Method 1: Flag emojis (most reliable visual indicator)
   const flagPattern = /\p{Extended_Pictographic}/gu;
@@ -295,33 +313,60 @@ function extractCountry(text: string): { country?: string; countryCode?: string 
   });
   
   for (const country of sortedCountries) {
-    // Check full name with word boundaries to avoid partial matches
-    const nameRegex = new RegExp(`\\b${country.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-    if (nameRegex.test(text)) {
-      return {
-        country: country.name,
-        countryCode: country.code,
-      };
+    // Check full name - more flexible matching (handles OCR spacing issues)
+    const nameLower = country.name.toLowerCase();
+    // Try exact match first
+    if (lowerText.includes(nameLower)) {
+      // Verify it's not a partial match in a longer word
+      const nameRegex = new RegExp(`\\b${country.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+      if (nameRegex.test(normalizedText)) {
+        return {
+          country: country.name,
+          countryCode: country.code,
+        };
+      }
+      // If word boundary fails, check if it's a standalone word (surrounded by spaces or punctuation)
+      const standaloneRegex = new RegExp(`(^|[^a-z])${country.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z]|$)`, 'i');
+      if (standaloneRegex.test(normalizedText)) {
+        return {
+          country: country.name,
+          countryCode: country.code,
+        };
+      }
     }
-    // Check aliases (including full official names) with word boundaries
+    
+    // Check aliases (including full official names) - more flexible
     if (country.aliases) {
       for (const alias of country.aliases) {
-        const aliasRegex = new RegExp(`\\b${alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-        if (aliasRegex.test(text)) {
-          return {
-            country: country.name,
-            countryCode: country.code,
-          };
+        const aliasLower = alias.toLowerCase();
+        if (lowerText.includes(aliasLower)) {
+          // Try word boundary match
+          const aliasRegex = new RegExp(`\\b${alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+          if (aliasRegex.test(normalizedText)) {
+            return {
+              country: country.name,
+              countryCode: country.code,
+            };
+          }
+          // Try standalone match
+          const standaloneAliasRegex = new RegExp(`(^|[^a-z])${alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z]|$)`, 'i');
+          if (standaloneAliasRegex.test(normalizedText)) {
+            return {
+              country: country.name,
+              countryCode: country.code,
+            };
+          }
         }
       }
     }
   }
   
-  // Method 3: "Nationality:" or "Country:" label
-  const nationalityMatch = text.match(/(?:nationality|country|nation)\s*[:\-\.]?\s*([A-Z]{2,3}|\w+(?:\s+\w+)*)/i);
+  // Method 3: "Nationality:" or "Country:" label - more flexible
+  const nationalityMatch = text.match(/(?:nationality|country|nation|issued\s+by|issued\s+in)\s*[:\-\.]?\s*([A-Z]{2,3}|\w+(?:\s+\w+)*)/i);
   if (nationalityMatch) {
     const value = nationalityMatch[1].trim();
     const valueUpper = value.toUpperCase();
+    const valueLower = value.toLowerCase();
     
     // Check if it's an ISO code
     const countryByCode = countries.find(c => c.code === valueUpper || c.code3 === valueUpper);
@@ -332,10 +377,9 @@ function extractCountry(text: string): { country?: string; countryCode?: string 
       };
     }
     
-    // Check if it's a country name (full or partial)
+    // Check if it's a country name (full or partial) - more flexible
     const countryByName = countries.find(c => {
       const nameLower = c.name.toLowerCase();
-      const valueLower = value.toLowerCase();
       // Exact match or contains the value
       return nameLower === valueLower || nameLower.includes(valueLower) || valueLower.includes(nameLower);
     });
@@ -346,11 +390,10 @@ function extractCountry(text: string): { country?: string; countryCode?: string 
       };
     }
     
-    // Check aliases
+    // Check aliases - more flexible
     const countryByAlias = countries.find(c => 
       c.aliases?.some(a => {
         const aliasLower = a.toLowerCase();
-        const valueLower = value.toLowerCase();
         return aliasLower === valueLower || aliasLower.includes(valueLower) || valueLower.includes(aliasLower);
       })
     );
@@ -358,6 +401,19 @@ function extractCountry(text: string): { country?: string; countryCode?: string 
       return {
         country: countryByAlias.name,
         countryCode: countryByAlias.code,
+      };
+    }
+  }
+  
+  // Method 4: Look for country name anywhere in text (last resort, but more lenient)
+  // This handles cases where OCR might have spacing issues
+  for (const country of sortedCountries) {
+    const nameWords = country.name.toLowerCase().split(/\s+/);
+    // If all words of country name appear in text (in any order), it's likely the country
+    if (nameWords.length > 1 && nameWords.every(word => lowerText.includes(word))) {
+      return {
+        country: country.name,
+        countryCode: country.code,
       };
     }
   }
