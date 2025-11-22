@@ -18,7 +18,8 @@ interface Credential {
   uniqueKeyHash: string;
   fields: {
     dob: string;
-    docType: string;
+    docType?: string;
+    documentType?: string;
     expiry?: string;
     nonce: string;
     countryCode?: string;
@@ -205,7 +206,11 @@ export default function MyProofs() {
         id: Date.now().toString(),
         idCommit: commit,
         uniqueKeyHash: hash,
-        fields: { ...extractedFields, nonce },
+        fields: { 
+          ...extractedFields, 
+          nonce,
+          documentType: extractedFields.documentType || 'unknown',
+        },
         issuedAt: new Date().toISOString(),
         walletAddress: address,
       };
@@ -617,9 +622,7 @@ export default function MyProofs() {
                 <span>
                   {issuing 
                     ? 'Issuing Credential...' 
-                    : !extractedFields.dob?.trim()
-                      ? 'Issue New Proof (Extract Date of Birth)'
-                      : 'Issue New Proof'
+                    : 'Issue New Proof'
                   }
                 </span>
               </button>
@@ -688,11 +691,15 @@ export default function MyProofs() {
                       }}
                       className="block w-full rounded-md border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none [&>option]:bg-neutral-900 [&>option]:text-white"
                     >
-                      {credentials.map((cred) => (
-                        <option key={cred.id} value={cred.id}>
-                          {cred.fields.docType?.toUpperCase()} - {new Date(cred.issuedAt).toLocaleDateString()}
-                        </option>
-                      ))}
+                      {credentials.map((cred) => {
+                        const docType = cred.fields.documentType || cred.fields.docType || 'Unknown';
+                        const docTypeDisplay = docType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        return (
+                          <option key={cred.id} value={cred.id}>
+                            {docTypeDisplay} - {new Date(cred.issuedAt).toLocaleDateString()}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
 

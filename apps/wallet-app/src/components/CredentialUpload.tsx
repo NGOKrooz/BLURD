@@ -15,6 +15,7 @@ export default function CredentialUpload({ onExtract, onError }: CredentialUploa
   const [extracting, setExtracting] = useState(false);
   const [progressText, setProgressText] = useState('Extracting details…');
   const [extractedFields, setExtractedFields] = useState<ExtractedFields>({});
+  const [documentType, setDocumentType] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (selectedFile: File) => {
@@ -43,6 +44,11 @@ export default function CredentialUpload({ onExtract, onError }: CredentialUploa
       // Step 2: Extract fields using simple extractor
       setProgressText('Processing extracted text…');
       const fields = extractFields(ocrText);
+      
+      // Add document type to fields
+      if (documentType) {
+        fields.documentType = documentType;
+      }
 
       // Step 3: Set extracted fields and notify parent
       setExtractedFields(fields);
@@ -60,6 +66,7 @@ export default function CredentialUpload({ onExtract, onError }: CredentialUploa
   const handleReset = () => {
     setFile(null);
     setExtractedFields({});
+    setDocumentType('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -82,6 +89,25 @@ export default function CredentialUpload({ onExtract, onError }: CredentialUploa
 
   return (
     <div className="space-y-4 w-full max-w-full overflow-x-hidden">
+      {/* Document Type Selection */}
+      <div>
+        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
+          Document Type
+        </label>
+        <select
+          value={documentType}
+          onChange={(e) => setDocumentType(e.target.value)}
+          className="w-full rounded-lg border border-white/10 bg-neutral-900/40 px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent touch-manipulation min-h-[44px]"
+        >
+          <option value="">Select document type...</option>
+          <option value="passport">Passport</option>
+          <option value="id_card">National ID Card</option>
+          <option value="driver_license">Driver&apos;s License</option>
+          <option value="voter_id">Voter ID</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
       {/* File Upload Area */}
       {!file ? (
         <div

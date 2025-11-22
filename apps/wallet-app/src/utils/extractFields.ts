@@ -13,6 +13,7 @@ export interface ExtractedFields {
   nationality?: string;
   documentNumber?: string;
   expiry?: string;
+  documentType?: string; // e.g., "passport", "id_card", "driver_license"
 }
 
 /**
@@ -153,37 +154,84 @@ function extractDOB(text: string): string | null {
 
 /**
  * Extract document number from text
+ * Looks for unique numbers that stand out (not dates, not common numbers)
  */
 function extractDocumentNumber(text: string): string | null {
-  // Look for labeled patterns first
+  // First, extract all potential dates to exclude them
+  const datePatterns = [
+    /\b\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\b/g,
+    /\b\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}\b/g,
+    /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4}\b/gi,
+  ];
+  const dates: string[] = [];
+  datePatterns.forEach(pattern => {
+    const matches = text.match(pattern);
+    if (matches) dates.push(...matches);
+  });
+
+  // Look for labeled patterns first (most reliable)
   const labeledPatterns = [
-    /(?:document|doc|id|identification)\s*(?:number|no|#)\s*[:\-\.]?\s*([A-Z0-9]{6,12})/gi,
-    /(?:passport)\s*(?:number|no|#)\s*[:\-\.]?\s*([A-Z0-9]{6,12})/gi,
-    /(?:serial)\s*(?:number|no|#)\s*[:\-\.]?\s*([A-Z0-9]{4,12})/gi,
-    /(?:ID|ID\s*NO|ID\s*#)\s*[:\-\.]?\s*([A-Z0-9]{6,12})/gi,
+    /(?:document|doc|id|identification)\s*(?:number|no|#)\s*[:\-\.]?\s*([A-Z0-9]{6,15})/gi,
+    /(?:passport)\s*(?:number|no|#)\s*[:\-\.]?\s*([A-Z0-9]{6,15})/gi,
+    /(?:serial)\s*(?:number|no|#)\s*[:\-\.]?\s*([A-Z0-9]{4,15})/gi,
+    /(?:ID|ID\s*NO|ID\s*#)\s*[:\-\.]?\s*([A-Z0-9]{6,15})/gi,
+    /(?:license|licence)\s*(?:number|no|#)\s*[:\-\.]?\s*([A-Z0-9]{6,15})/gi,
   ];
   
   for (const pattern of labeledPatterns) {
-    const match = text.match(pattern);
-    if (match && match[1]) {
-      return match[1].toUpperCase().replace(/\s+/g, '');
+    const matches = [...text.matchAll(pattern)];
+    for (const match of matches) {
+      if (match[1]) {
+        const candidate = match[1].toUpperCase().replace(/\s+/g, '');
+        // Validate: should be mostly alphanumeric, not a date, and have some uniqueness
+        if (candidate.length >= 6 && candidate.length <= 15) {
+          // Check if it's not a date
+          const isDate = dates.some(date => candidate.includes(date.replace(/[\/\-\.]/g, '')));
+          if (!isDate) {
+            // Check if it has enough uniqueness (mix of letters and numbers, or long enough)
+            const hasLetters = /[A-Z]/.test(candidate);
+            const hasNumbers = /[0-9]/.test(candidate);
+            if ((hasLetters && hasNumbers) || candidate.length >= 8) {
+              return candidate;
+            }
+          }
+        }
+      }
     }
   }
   
-  // Fallback: any uppercase alphanumeric 6-12 chars
-  const generalPattern = /([A-Z0-9]{6,12})/g;
-  const matches = text.match(generalPattern);
-  if (matches && matches.length > 0) {
-    // Prefer longer matches
-    const sorted = matches.sort((a, b) => b.length - a.length);
-    return sorted[0].toUpperCase();
-  }
+  // Fallback: Look for unique alphanumeric sequences that stand out
+  // Pattern: 6-15 chars, mix of letters/numbers, not near date keywords
+  const uniquePattern = /\b([A-Z]{2,}[0-9]{3,}|[0-9]{3,}[A-Z]{2,}|[A-Z0-9]{8,15})\b/g;
+  const uniqueMatches = [...text.matchAll(uniquePattern)];
   
-  return null;
+  // Filter out dates and common patterns
+  const candidates = uniqueMatches
+    .map(m => m[1].toUpperCase().replace(/\s+/g, ''))
+    .filter(c => {
+      if (c.length < 6 || c.length > 15) return false;
+      // Exclude if it looks like a date
+      if (dates.some(date => c.includes(date.replace(/[\/\-\.]/g, '')))) return false;
+      // Prefer sequences with both letters and numbers
+      const hasLetters = /[A-Z]/.test(c);
+      const hasNumbers = /[0-9]/.test(c);
+      return (hasLetters && hasNumbers) || c.length >= 10;
+    })
+    .sort((a, b) => {
+      // Prefer longer, more complex sequences
+      const aComplexity = (/[A-Z]/.test(a) ? 1 : 0) + (/[0-9]/.test(a) ? 1 : 0);
+      const bComplexity = (/[A-Z]/.test(b) ? 1 : 0) + (/[0-9]/.test(b) ? 1 : 0);
+      if (bComplexity !== aComplexity) return bComplexity - aComplexity;
+      return b.length - a.length;
+    });
+  
+  return candidates.length > 0 ? candidates[0] : null;
 }
 
 /**
  * Extract country from text
+ * Looks for full country names like "Federal Republic of Nigeria" or "United States of America"
+ * Also checks for flag emojis and nationality labels
  */
 function extractCountry(text: string): { country?: string; countryCode?: string } | null {
   const countries = (countriesData?.countries || []) as Array<{
@@ -196,7 +244,7 @@ function extractCountry(text: string): { country?: string; countryCode?: string 
   
   const lowerText = text.toLowerCase();
   
-  // Method 1: Flag emojis
+  // Method 1: Flag emojis (most reliable visual indicator)
   const flagPattern = /\p{Extended_Pictographic}/gu;
   const flagMatch = text.match(flagPattern);
   if (flagMatch) {
@@ -211,39 +259,19 @@ function extractCountry(text: string): { country?: string; countryCode?: string 
     }
   }
   
-  // Method 2: "Nationality:" label
-  const nationalityMatch = text.match(/nationality\s*[:\-\.]?\s*([A-Z]{2,3}|\w+)/i);
-  if (nationalityMatch) {
-    const value = nationalityMatch[1].trim().toUpperCase();
-    // Check if it's an ISO code
-    const country = countries.find(c => c.code === value || c.code3 === value);
-    if (country) {
-      return {
-        country: country.name,
-        countryCode: country.code,
-      };
-    }
-    // Check if it's a country name
-    const countryByName = countries.find(c => 
-      c.name.toLowerCase() === value.toLowerCase() ||
-      c.aliases?.some(a => a.toLowerCase() === value.toLowerCase())
-    );
-    if (countryByName) {
-      return {
-        country: countryByName.name,
-        countryCode: countryByName.code,
-      };
-    }
-  }
+  // Method 2: Full official country names (e.g., "Federal Republic of Nigeria", "United States of America")
+  // Sort by length (longest first) to match full names before partial matches
+  const sortedCountries = [...countries].sort((a, b) => b.name.length - a.name.length);
   
-  // Method 3: Country names (exact match in text)
-  for (const country of countries) {
+  for (const country of sortedCountries) {
+    // Check full name
     if (lowerText.includes(country.name.toLowerCase())) {
       return {
         country: country.name,
         countryCode: country.code,
       };
     }
+    // Check aliases (including full official names)
     if (country.aliases) {
       for (const alias of country.aliases) {
         if (lowerText.includes(alias.toLowerCase())) {
@@ -253,6 +281,51 @@ function extractCountry(text: string): { country?: string; countryCode?: string 
           };
         }
       }
+    }
+  }
+  
+  // Method 3: "Nationality:" or "Country:" label
+  const nationalityMatch = text.match(/(?:nationality|country|nation)\s*[:\-\.]?\s*([A-Z]{2,3}|\w+(?:\s+\w+)*)/i);
+  if (nationalityMatch) {
+    const value = nationalityMatch[1].trim();
+    const valueUpper = value.toUpperCase();
+    
+    // Check if it's an ISO code
+    const countryByCode = countries.find(c => c.code === valueUpper || c.code3 === valueUpper);
+    if (countryByCode) {
+      return {
+        country: countryByCode.name,
+        countryCode: countryByCode.code,
+      };
+    }
+    
+    // Check if it's a country name (full or partial)
+    const countryByName = countries.find(c => {
+      const nameLower = c.name.toLowerCase();
+      const valueLower = value.toLowerCase();
+      // Exact match or contains the value
+      return nameLower === valueLower || nameLower.includes(valueLower) || valueLower.includes(nameLower);
+    });
+    if (countryByName) {
+      return {
+        country: countryByName.name,
+        countryCode: countryByName.code,
+      };
+    }
+    
+    // Check aliases
+    const countryByAlias = countries.find(c => 
+      c.aliases?.some(a => {
+        const aliasLower = a.toLowerCase();
+        const valueLower = value.toLowerCase();
+        return aliasLower === valueLower || aliasLower.includes(valueLower) || valueLower.includes(aliasLower);
+      })
+    );
+    if (countryByAlias) {
+      return {
+        country: countryByAlias.name,
+        countryCode: countryByAlias.code,
+      };
     }
   }
   
