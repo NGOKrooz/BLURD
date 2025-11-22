@@ -30,7 +30,7 @@ export default function PaymentsDashboard() {
           </div>
           <h2 className="text-base sm:text-lg font-semibold text-white mb-2">Send Private Payment</h2>
           <p className="text-xs sm:text-sm text-gray-400 break-words">
-            Send a private payment and optionally bind it to a ZK identity proof (Age 18+, Nationality, or Human Uniqueness).
+            Send private payments with optional ZK identity proof binding
           </p>
         </Link>
 
@@ -47,7 +47,7 @@ export default function PaymentsDashboard() {
           </div>
           <h2 className="text-base sm:text-lg font-semibold text-white mb-2">Verify Incoming Payment</h2>
           <p className="text-xs sm:text-sm text-gray-400 break-words">
-            Upload a payment-proof.json file to verify that a payment was made and optionally check the required amount.
+            Verify payments via payment-proof.json upload
           </p>
         </Link>
 
@@ -64,38 +64,22 @@ export default function PaymentsDashboard() {
           </div>
           <h2 className="text-base sm:text-lg font-semibold text-white mb-2">Payment History</h2>
           <p className="text-xs sm:text-sm text-gray-400 break-words">
-            View all your past payments, proof generations, and verification history.
+            View payment and proof history
           </p>
         </Link>
       </div>
 
       {/* Privacy Summary */}
       <div className="mt-6 sm:mt-8 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 sm:p-6 overflow-x-hidden">
-        <div className="flex items-start space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+        <div className="flex items-start space-x-2 sm:space-x-3">
           <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400 mt-0.5 flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <h3 className="text-xs sm:text-sm font-semibold text-blue-300 mb-2">Privacy-First Payments</h3>
-            <p className="text-xs text-blue-300 mb-3 break-words">
-              Blurd uses privacy-preserving verification. Payment-proof.json files contain NO sensitive data:
-            </p>
-            <ul className="text-xs text-blue-300 space-y-1 list-disc list-inside mb-3 break-words">
-              <li>No wallet addresses are exposed</li>
-              <li>No transaction hashes are revealed</li>
-              <li>No timestamps are included</li>
-              <li>No raw amounts are shown (only validation signals)</li>
-            </ul>
+            <h3 className="text-xs sm:text-sm font-semibold text-blue-300 mb-2">Privacy-First</h3>
             <p className="text-xs text-blue-300 break-words">
-              Only zero-knowledge validation signals are included, ensuring maximum privacy compliance with &quot;Private Payments & Transactions&quot; track requirements.
+              Payment-proof.json files contain zero-knowledge validation signals only. No wallet addresses, transaction hashes, or timestamps are exposed.
             </p>
           </div>
         </div>
-      </div>
-
-      {/* Info Box */}
-      <div className="mt-3 sm:mt-4 bg-gray-500/10 border border-gray-500/20 rounded-lg p-3 sm:p-4 overflow-x-hidden">
-        <p className="text-xs text-gray-300 break-words">
-          <strong>Note:</strong> In MVP mode, Blurd simulates shielded Zcash-like payments locally. Payments are stored in your browser and a privacy-preserving payment-proof.json file is generated for sharing with merchants.
-        </p>
       </div>
     </div>
   );

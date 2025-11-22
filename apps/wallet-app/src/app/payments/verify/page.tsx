@@ -101,9 +101,6 @@ export default function VerifyPayment() {
 
       <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-4 sm:p-6 lg:p-8 overflow-x-hidden">
         <h1 className="text-xl sm:text-2xl font-semibold text-white mb-2">Verify Incoming Payment</h1>
-        <p className="text-xs sm:text-sm text-gray-400 mb-4 sm:mb-6 break-words">
-          Upload a privacy-preserving payment-proof.json file to verify a payment without exposing sensitive data
-        </p>
 
         {error && (
           <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-start space-x-3">

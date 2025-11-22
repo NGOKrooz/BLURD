@@ -32,14 +32,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 w-full min-w-0">
         {/* Mobile Header */}
         <div className="sticky top-0 z-30 bg-neutral-900/80 backdrop-blur-md border-b border-white/10">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between md:justify-end">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="md:hidden p-2 text-gray-400 hover:text-white transition-colors"
-              aria-label="Toggle menu"
-            >
-              {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="md:hidden p-2 text-gray-400 hover:text-white transition-colors"
+                aria-label="Toggle menu"
+              >
+                {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
+              <h1 className="text-lg sm:text-xl font-semibold text-white">Blurd</h1>
+            </div>
             <WalletConnect />
           </div>
         </div>

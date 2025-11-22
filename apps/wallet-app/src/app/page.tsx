@@ -127,17 +127,6 @@ export default function Dashboard() {
             <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-white mb-3 sm:mb-4 md:mb-5 leading-tight">
               Prove Anything. <span className="text-blue-400">Reveal Nothing.</span>
             </h1>
-            <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                Identity Proofs
-              </span>
-              <span className="inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                Payment Proofs
-              </span>
-              <span className="inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-300 border border-green-500/30">
-                Reusable ZK Credentials
-              </span>
-            </div>
           </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-3 sm:mt-4">
@@ -162,7 +151,6 @@ export default function Dashboard() {
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <h2 className="text-xl sm:text-2xl font-semibold text-white">Overview</h2>
-        <p className="mt-1 text-xs sm:text-sm text-gray-400">Zero-knowledge identity and payment verification</p>
       </div>
 
       {/* Wallet Connection */}
@@ -171,7 +159,6 @@ export default function Dashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex-1 min-w-0">
               <h3 className="text-base sm:text-lg font-semibold text-yellow-300 mb-1 sm:mb-2">Connect Your Wallet</h3>
-              <p className="text-xs sm:text-sm text-yellow-200">Connect your wallet to start using Blurd</p>
             </div>
             <div className="flex-shrink-0">
               <ConnectButton />
@@ -259,16 +246,12 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Link
             href="/my-proofs"
-            className="group relative rounded-lg border border-white/10 bg-neutral-900/40 backdrop-blur-md p-4 sm:p-6 shadow-sm transition-all hover:bg-neutral-900/60 hover:border-white/20 touch-manipulation min-h-[120px]"
+            className="group relative rounded-lg border border-white/10 bg-neutral-900/40 backdrop-blur-md p-4 sm:p-6 shadow-sm transition-all hover:bg-neutral-900/60 hover:border-white/20 touch-manipulation min-h-[100px]"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm sm:text-base font-semibold text-white mb-2">My Proofs</h3>
-                <div className="space-y-1">
-                  <p className="text-xs sm:text-sm text-gray-400">• Upload encrypted credential</p>
-                  <p className="text-xs sm:text-sm text-gray-400">• Generate ZK identity proofs</p>
-                  <p className="text-xs sm:text-sm text-gray-400">• Manage reusable proofs</p>
-                </div>
+                <p className="text-xs sm:text-sm text-gray-400">Generate ZK identity proofs</p>
               </div>
               <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-white flex-shrink-0 mt-0.5" />
             </div>
@@ -276,16 +259,12 @@ export default function Dashboard() {
           
           <Link
             href="/payments"
-            className="group relative rounded-lg border border-white/10 bg-neutral-900/40 backdrop-blur-md p-4 sm:p-6 shadow-sm transition-all hover:bg-neutral-900/60 hover:border-white/20 touch-manipulation min-h-[120px]"
+            className="group relative rounded-lg border border-white/10 bg-neutral-900/40 backdrop-blur-md p-4 sm:p-6 shadow-sm transition-all hover:bg-neutral-900/60 hover:border-white/20 touch-manipulation min-h-[100px]"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm sm:text-base font-semibold text-white mb-2">Payments</h3>
-                <div className="space-y-1">
-                  <p className="text-xs sm:text-sm text-gray-400">• Send private payments</p>
-                  <p className="text-xs sm:text-sm text-gray-400">• Bind payments to identity proofs (optional)</p>
-                  <p className="text-xs sm:text-sm text-gray-400">• Verify payment occurred without revealing details</p>
-                </div>
+                <p className="text-xs sm:text-sm text-gray-400">Send & verify private payments</p>
               </div>
               <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-white flex-shrink-0 mt-0.5" />
             </div>
@@ -293,15 +272,12 @@ export default function Dashboard() {
 
           <Link
             href="/history"
-            className="group relative rounded-lg border border-white/10 bg-neutral-900/40 backdrop-blur-md p-4 sm:p-6 shadow-sm transition-all hover:bg-neutral-900/60 hover:border-white/20 touch-manipulation min-h-[120px]"
+            className="group relative rounded-lg border border-white/10 bg-neutral-900/40 backdrop-blur-md p-4 sm:p-6 shadow-sm transition-all hover:bg-neutral-900/60 hover:border-white/20 touch-manipulation min-h-[100px]"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm sm:text-base font-semibold text-white mb-2">History</h3>
-                <div className="space-y-1">
-                  <p className="text-xs sm:text-sm text-gray-400">• View proof generation & payment events</p>
-                  <p className="text-xs sm:text-sm text-gray-400">• Export verification logs (privacy-preserving)</p>
-                </div>
+                <p className="text-xs sm:text-sm text-gray-400">View payment & proof history</p>
               </div>
               <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-white flex-shrink-0 mt-0.5" />
             </div>

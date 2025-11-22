@@ -162,9 +162,6 @@ export default function SendPayment() {
 
       <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-4 sm:p-6 lg:p-8 overflow-x-hidden">
         <h1 className="text-xl sm:text-2xl font-semibold text-white mb-2">Send Private Payment</h1>
-        <p className="text-xs sm:text-sm text-gray-400 mb-4 sm:mb-6 break-words">
-          Send a private payment and optionally bind it to a ZK identity proof
-        </p>
 
         {!isConnected && (
           <div className="mb-4 sm:mb-6 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 sm:p-4">
