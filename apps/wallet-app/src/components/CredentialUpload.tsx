@@ -14,7 +14,10 @@ export default function CredentialUpload({ onExtract, onError }: CredentialUploa
   const [file, setFile] = useState<File | null>(null);
   const [extracting, setExtracting] = useState(false);
   const [progressText, setProgressText] = useState('Extracting details…');
-  const [extractedFields, setExtractedFields] = useState<ExtractedFields>({});
+  const [extractedFields, setExtractedFields] = useState<ExtractedFields>({
+    success: false,
+    detected_by: {},
+  });
   const [documentType, setDocumentType] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -25,7 +28,10 @@ export default function CredentialUpload({ onExtract, onError }: CredentialUploa
     }
 
     setFile(selectedFile);
-    setExtractedFields({});
+    setExtractedFields({
+      success: false,
+      detected_by: {},
+    });
     await extractWithOCR(selectedFile);
   };
 
@@ -67,7 +73,10 @@ export default function CredentialUpload({ onExtract, onError }: CredentialUploa
     } catch (error: any) {
       console.error('Extraction error:', error);
       onError(error.message || 'Failed to extract document details', true);
-      setExtractedFields({});
+      setExtractedFields({
+        success: false,
+        detected_by: {},
+      });
     } finally {
       setExtracting(false);
       setProgressText('Extraction complete');
@@ -76,7 +85,10 @@ export default function CredentialUpload({ onExtract, onError }: CredentialUploa
 
   const handleReset = () => {
     setFile(null);
-    setExtractedFields({});
+    setExtractedFields({
+      success: false,
+      detected_by: {},
+    });
     setDocumentType('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -172,11 +184,31 @@ export default function CredentialUpload({ onExtract, onError }: CredentialUploa
             <div className="space-y-3 p-3 sm:p-4 bg-neutral-900/40 rounded-lg border border-white/10 overflow-x-hidden">
               <p className="text-xs font-semibold text-green-400 mb-3">Extracted Details:</p>
               
+              {/* Document Type */}
+              {(extractedFields.document_type || extractedFields.documentType) && (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-gray-400 flex-shrink-0">Document Type:</span>
+                  <span className="text-xs text-green-300 text-right break-words capitalize">
+                    {(extractedFields.document_type || extractedFields.documentType)?.replace(/_/g, ' ')}
+                  </span>
+                </div>
+              )}
+
+              {/* Full Name */}
+              {extractedFields.full_name && (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-gray-400 flex-shrink-0">Full Name:</span>
+                  <span className="text-xs text-green-300 text-right break-words">{extractedFields.full_name}</span>
+                </div>
+              )}
+
               {/* Date of Birth */}
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs text-gray-400 flex-shrink-0">Date of Birth:</span>
-                {extractedFields.dob ? (
-                  <span className="text-xs text-green-300 text-right break-words">{formatDate(extractedFields.dob)}</span>
+                {(extractedFields.date_of_birth || extractedFields.dob) ? (
+                  <span className="text-xs text-green-300 text-right break-words">
+                    {formatDate(extractedFields.date_of_birth || extractedFields.dob || '')}
+                  </span>
                 ) : (
                   <span className="text-xs text-yellow-400 text-right">Not detected</span>
                 )}
@@ -195,7 +227,7 @@ export default function CredentialUpload({ onExtract, onError }: CredentialUploa
                 <span className="text-xs text-gray-400 flex-shrink-0">Country:</span>
                 {extractedFields.country ? (
                   <span className="text-xs text-green-300 text-right break-words">
-                    {extractedFields.country} {extractedFields.countryCode && `(${extractedFields.countryCode})`}
+                    {extractedFields.country} {(extractedFields.country_code || extractedFields.countryCode) && `(${extractedFields.country_code || extractedFields.countryCode})`}
                   </span>
                 ) : (
                   <span className="text-xs text-yellow-400 text-right">Not detected</span>
@@ -210,21 +242,41 @@ export default function CredentialUpload({ onExtract, onError }: CredentialUploa
                 </div>
               )}
 
-              {/* Document Number */}
+              {/* ID Number / Document Number */}
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs text-gray-400 flex-shrink-0">Document Number:</span>
-                {extractedFields.documentNumber ? (
-                  <span className="text-xs text-green-300 font-mono text-right break-all">{extractedFields.documentNumber}</span>
+                <span className="text-xs text-gray-400 flex-shrink-0">ID Number:</span>
+                {(extractedFields.id_number || extractedFields.documentNumber) ? (
+                  <span className="text-xs text-green-300 font-mono text-right break-all">
+                    {extractedFields.id_number || extractedFields.documentNumber}
+                  </span>
                 ) : (
                   <span className="text-xs text-yellow-400 text-right">Not detected</span>
                 )}
               </div>
 
-              {/* Valid Until */}
-              {extractedFields.expiry && (
+              {/* Valid Until / Expiry Date */}
+              {(extractedFields.expiry_date || extractedFields.expiry) && (
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs text-gray-400 flex-shrink-0">Valid Until:</span>
-                  <span className="text-xs text-green-300 text-right break-words">{formatDate(extractedFields.expiry)}</span>
+                  <span className="text-xs text-green-300 text-right break-words">
+                    {formatDate(extractedFields.expiry_date || extractedFields.expiry || '')}
+                  </span>
+                </div>
+              )}
+
+              {/* Detection Methods (Debug Info) */}
+              {extractedFields.detected_by && Object.keys(extractedFields.detected_by).length > 0 && process.env.NODE_ENV === 'development' && (
+                <div className="mt-3 pt-3 border-t border-white/10">
+                  <p className="text-xs text-gray-500 mb-1">Detection Methods:</p>
+                  {extractedFields.detected_by.country && (
+                    <p className="text-xs text-gray-500">Country: {extractedFields.detected_by.country.join(', ')}</p>
+                  )}
+                  {extractedFields.detected_by.id_number && (
+                    <p className="text-xs text-gray-500">ID: {extractedFields.detected_by.id_number.join(', ')}</p>
+                  )}
+                  {extractedFields.detected_by.document_type && (
+                    <p className="text-xs text-gray-500">Type: {extractedFields.detected_by.document_type.join(', ')}</p>
+                  )}
                 </div>
               )}
 

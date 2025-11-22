@@ -53,31 +53,35 @@ function getCountryNumeric(countryCode: string): number {
  */
 export async function generateIdentityData(ocrText: string, extractedFields?: {
   dob?: string;
+  date_of_birth?: string;
   documentNumber?: string;
+  id_number?: string;
   passportNumber?: string;
   serialNumber?: string;
   voterNumber?: string;
   countryCode?: string;
+  country_code?: string;
 }): Promise<IdentityData> {
-  // Extract fields if not provided
-  let dob = extractedFields?.dob;
-  let serial = extractedFields?.documentNumber || 
+  // Extract fields if not provided (support both new and legacy field names)
+  let dob = extractedFields?.date_of_birth || extractedFields?.dob;
+  let serial = extractedFields?.id_number ||
+               extractedFields?.documentNumber || 
                extractedFields?.passportNumber || 
                extractedFields?.serialNumber || 
                extractedFields?.voterNumber;
-  let countryCode = extractedFields?.countryCode;
+  let countryCode = extractedFields?.country_code || extractedFields?.countryCode;
   
   // Extract from OCR if not provided using simple extractor
   if (!dob || !serial || !countryCode) {
     const extracted = extractFields(ocrText);
-    if (!dob && extracted.dob) {
-      dob = extracted.dob;
+    if (!dob && (extracted.date_of_birth || extracted.dob)) {
+      dob = extracted.date_of_birth || extracted.dob;
     }
-    if (!serial && extracted.documentNumber) {
-      serial = extracted.documentNumber;
+    if (!serial && (extracted.id_number || extracted.documentNumber)) {
+      serial = extracted.id_number || extracted.documentNumber;
     }
-    if (!countryCode && extracted.countryCode) {
-      countryCode = extracted.countryCode;
+    if (!countryCode && (extracted.country_code || extracted.countryCode)) {
+      countryCode = extracted.country_code || extracted.countryCode;
     }
   }
   

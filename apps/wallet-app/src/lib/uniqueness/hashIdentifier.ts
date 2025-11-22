@@ -95,17 +95,23 @@ async function hashIdentifierSHA256(value: string): Promise<string> {
 
 /**
  * Extract primary unique identifier from ExtractedFields
- * Priority: documentNumber > voterNumber > passportNumber > serialNumber
+ * Priority: id_number > documentNumber > voterNumber > passportNumber > serialNumber
  * 
  * @param fields - The extracted fields object
  * @returns The primary identifier string or null if none found
  */
 export function extractPrimaryIdentifier(fields: {
+  id_number?: string;
   documentNumber?: string;
   voterNumber?: string;
   passportNumber?: string;
   serialNumber?: string;
 }): string | null {
+  // New field name (priority)
+  if (fields.id_number && fields.id_number.trim().length > 0) {
+    return fields.id_number;
+  }
+  // Legacy field names (backward compatibility)
   if (fields.documentNumber && fields.documentNumber.trim().length > 0) {
     return fields.documentNumber;
   }

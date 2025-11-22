@@ -185,7 +185,8 @@ export default function MyProofs() {
     }
 
     // Check if DOB is valid (not empty or just whitespace)
-    const dobValid = extractedFields.dob && extractedFields.dob.trim().length > 0;
+    const dobValid = (extractedFields.date_of_birth || extractedFields.dob) && 
+                     (extractedFields.date_of_birth || extractedFields.dob)?.trim().length > 0;
     
     if (!dobValid) {
       alert('Please upload and extract Date of Birth from your ID document first.');
@@ -209,7 +210,8 @@ export default function MyProofs() {
         fields: { 
           ...extractedFields, 
           nonce,
-          documentType: extractedFields.documentType || 'unknown',
+          documentType: extractedFields.document_type || extractedFields.documentType || 'unknown',
+          docType: extractedFields.document_type || extractedFields.documentType || 'unknown',
         },
         issuedAt: new Date().toISOString(),
         walletAddress: address,
@@ -599,7 +601,7 @@ export default function MyProofs() {
                 onClick={handleIssueNew}
                 disabled={
                   issuing || 
-                  !extractedFields.dob?.trim()
+                  !(extractedFields.date_of_birth || extractedFields.dob)?.trim()
                 }
                 className={`w-full rounded-md px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-white transition-all flex items-center justify-center space-x-2 touch-manipulation ${
                   issuing || !extractedFields.dob?.trim()
@@ -613,7 +615,7 @@ export default function MyProofs() {
                     : 'pointer'
                 }}
                 title={
-                  !extractedFields.dob?.trim()
+                  !(extractedFields.date_of_birth || extractedFields.dob)?.trim()
                     ? 'Please upload and extract Date of Birth from your ID document.'
                     : 'Click to issue credential from extracted fields'
                 }
