@@ -17,6 +17,7 @@ export interface ExtractedFields {
   age?: number;
   nationality?: string;
   raw_text?: string;
+  country_confidence_score?: number;
   detected_by?: {
     country?: string[];
     id_number?: string[];
@@ -226,9 +227,84 @@ function detectDocumentType(text: string): { type: string; method: string } | nu
 }
 
 /**
- * Extract country using multiple methods
+ * Strong Nigerian detection patterns (HIGHEST PRIORITY)
  */
-function detectCountry(text: string): { country: string; code: string; methods: string[] } | null {
+function detectNigeriaStrong(text: string): { confidence: number; methods: string[] } | null {
+  const normalized = normalizeText(text);
+  const upperText = normalized.toUpperCase();
+  const lowerText = normalized.toLowerCase();
+  const methods: string[] = [];
+  let confidence = 0;
+  
+  // Official Names (HIGHEST CONFIDENCE - 1.0)
+  const officialNames = [
+    /\bNIGERIA\b/i,
+    /\bFEDERAL\s+REPUBLIC\s+OF\s+NIGERIA\b/i,
+    /\bREPUBLIC\s+OF\s+NIGERIA\b/i,
+    /\bFRN\b/i,
+    /\bNIGERIAN\b/i,
+  ];
+  for (const pattern of officialNames) {
+    if (pattern.test(normalized)) {
+      methods.push('OFFICIAL_NAME');
+      confidence = Math.max(confidence, 1.0);
+    }
+  }
+  
+  // NIMC and NIN (VERY HIGH CONFIDENCE - 0.95)
+  const nimcPatterns = [
+    /\bNIMC\b/i,
+    /\bNATIONAL\s+IDENTITY\s+MANAGEMENT\s+COMMISSION\b/i,
+    /\bNIN\s+SLIP\b/i,
+    /\bNIN\b/i,
+  ];
+  for (const pattern of nimcPatterns) {
+    if (pattern.test(normalized)) {
+      methods.push('NIMC_KEYWORD');
+      confidence = Math.max(confidence, 0.95);
+    }
+  }
+  
+  // Document-specific Nigerian keywords (HIGH CONFIDENCE - 0.9)
+  const docKeywords = [
+    /\bNIN\s+SLIP\b/i,
+    /\bCARD\s+NUMBER\b/i,
+    /\bDOCUMENT\s+NUMBER\b/i,
+    /\bNIMC\s+APP\b/i,
+    /\bNATIONAL\s+ID\s+CARD\b/i,
+    /\bECOWAS\b/i,
+  ];
+  for (const pattern of docKeywords) {
+    if (pattern.test(normalized)) {
+      methods.push('DOCUMENT_KEYWORD');
+      confidence = Math.max(confidence, 0.9);
+    }
+  }
+  
+  // Local language patterns (MEDIUM-HIGH CONFIDENCE - 0.85)
+  const localPatterns = [
+    /\b(?:Ugu|Enugu|Abuja|Lagos)\b/i,
+    /\bSTATE\s+OF\s+ORIGIN\b/i,
+  ];
+  for (const pattern of localPatterns) {
+    if (pattern.test(normalized)) {
+      methods.push('LOCAL_PATTERN');
+      confidence = Math.max(confidence, 0.85);
+    }
+  }
+  
+  if (confidence > 0) {
+    return { confidence, methods };
+  }
+  
+  return null;
+}
+
+/**
+ * Extract country using multiple methods with CORRECT PRIORITY ORDER
+ * Priority: Explicit matches > Official phrases > Nationality > Keywords > Flag > ISO codes
+ */
+function detectCountry(text: string): { country: string; code: string; methods: string[]; confidence: number } | null {
   const countries = (countriesData?.countries || []) as Array<{
     name: string;
     code: string;
@@ -238,35 +314,62 @@ function detectCountry(text: string): { country: string; code: string; methods: 
   }>;
   
   const normalized = normalizeText(text);
+  const upperText = normalized.toUpperCase();
   const lowerText = normalized.toLowerCase();
   const methods: string[] = [];
+  let confidence = 0;
   
-  // Method 1: Flag emojis (most reliable)
-  const flagPattern = /\p{Extended_Pictographic}/gu;
-  const flagMatch = text.match(flagPattern);
-  if (flagMatch) {
-    for (const emoji of flagMatch) {
-      const country = countries.find(c => c.flag === emoji);
+  // PRIORITY 1: Strong Nigerian detection (HIGHEST PRIORITY - OVERRIDES EVERYTHING)
+  const nigeriaStrong = detectNigeriaStrong(text);
+  if (nigeriaStrong && nigeriaStrong.confidence >= 0.85) {
+    const nigeria = countries.find(c => c.name === 'Nigeria');
+    if (nigeria) {
+      return {
+        country: nigeria.name,
+        code: nigeria.code,
+        methods: ['NIGERIA_STRONG', ...nigeriaStrong.methods],
+        confidence: nigeriaStrong.confidence,
+      };
+    }
+  }
+  
+  // PRIORITY 2: Explicit country name matches (exact or partial) - HIGH CONFIDENCE
+  const explicitPatterns = [
+    { pattern: /\bNIGERIA\b/i, country: 'Nigeria', confidence: 0.95 },
+    { pattern: /\bFEDERAL\s+REPUBLIC\s+OF\s+NIGERIA\b/i, country: 'Nigeria', confidence: 1.0 },
+    { pattern: /\bUNITED\s+STATES\s+OF\s+AMERICA\b/i, country: 'United States', confidence: 1.0 },
+    { pattern: /\bKINGDOM\s+OF\s+SAUDI\s+ARABIA\b/i, country: 'Saudi Arabia', confidence: 1.0 },
+    { pattern: /\bREPUBLIC\s+OF\s+GHANA\b/i, country: 'Ghana', confidence: 1.0 },
+  ];
+  
+  for (const { pattern, country: countryName, confidence: conf } of explicitPatterns) {
+    if (pattern.test(normalized)) {
+      const country = countries.find(c => c.name === countryName);
       if (country) {
-        methods.push('FLAG');
-        return { country: country.name, code: country.code, methods };
+        methods.push('EXPLICIT_MATCH');
+        return { country: country.name, code: country.code, methods, confidence: conf };
       }
     }
   }
   
-  // Method 2: ISO codes (NGA, USA, UAE, etc.)
-  const isoCodePattern = /\b([A-Z]{2,3})\b/g;
-  const isoMatches = [...normalized.matchAll(isoCodePattern)];
-  for (const match of isoMatches) {
-    const code = match[1].toUpperCase();
-    const country = countries.find(c => c.code === code || c.code3 === code);
-    if (country) {
-      methods.push('ISO_CODE');
-      return { country: country.name, code: country.code, methods };
+  // PRIORITY 3: Official phrases inside the card
+  const officialPhrases = [
+    { pattern: /\bNIMC\b/i, country: 'Nigeria', confidence: 0.95 },
+    { pattern: /\bNATIONAL\s+IDENTITY\s+MANAGEMENT\s+COMMISSION\b/i, country: 'Nigeria', confidence: 0.95 },
+    { pattern: /\bECOWAS\b/i, country: 'Nigeria', confidence: 0.8 }, // ECOWAS is West African, but Nigeria is most common
+  ];
+  
+  for (const { pattern, country: countryName, confidence: conf } of officialPhrases) {
+    if (pattern.test(normalized)) {
+      const country = countries.find(c => c.name === countryName);
+      if (country) {
+        methods.push('OFFICIAL_PHRASE');
+        return { country: country.name, code: country.code, methods, confidence: conf };
+      }
     }
   }
   
-  // Method 3: Nationality field
+  // PRIORITY 4: Nationality field
   const nationalityMatch = text.match(/(?:nationality|country|nation)\s*[:\-\.]?\s*([A-Z]{2,3}|\w+(?:\s+\w+)*)/i);
   if (nationalityMatch) {
     const value = nationalityMatch[1].trim();
@@ -277,7 +380,11 @@ function detectCountry(text: string): { country: string; code: string; methods: 
     const countryByCode = countries.find(c => c.code === valueUpper || c.code3 === valueUpper);
     if (countryByCode) {
       methods.push('NATIONALITY');
-      return { country: countryByCode.name, code: countryByCode.code, methods };
+      // Block Egypt unless very confident
+      if (countryByCode.name === 'Egypt') {
+        return null; // Reject low-confidence Egypt detection
+      }
+      return { country: countryByCode.name, code: countryByCode.code, methods, confidence: 0.9 };
     }
     
     // Check country name
@@ -287,7 +394,11 @@ function detectCountry(text: string): { country: string; code: string; methods: 
     });
     if (countryByName) {
       methods.push('NATIONALITY');
-      return { country: countryByName.name, code: countryByName.code, methods };
+      // Block Egypt unless very confident
+      if (countryByName.name === 'Egypt') {
+        return null; // Reject low-confidence Egypt detection
+      }
+      return { country: countryByName.name, code: countryByName.code, methods, confidence: 0.9 };
     }
     
     // Check aliases
@@ -299,12 +410,72 @@ function detectCountry(text: string): { country: string; code: string; methods: 
     );
     if (countryByAlias) {
       methods.push('NATIONALITY');
-      return { country: countryByAlias.name, code: countryByAlias.code, methods };
+      // Block Egypt unless very confident
+      if (countryByAlias.name === 'Egypt') {
+        return null; // Reject low-confidence Egypt detection
+      }
+      return { country: countryByAlias.name, code: countryByAlias.code, methods, confidence: 0.9 };
     }
   }
   
-  // Method 4: Full country names (prioritize longer names first)
-  const priorityCountries = ['Nigeria', 'United States', 'United Kingdom', 'Saudi Arabia', 'Ghana', 'South Africa'];
+  // PRIORITY 5: Document-specific keywords
+  const docTypeKeywords = [
+    { pattern: /\bNIN\s+SLIP\b/i, country: 'Nigeria', confidence: 0.95 },
+    { pattern: /\bPVC\b/i, country: 'Nigeria', confidence: 0.9 }, // Permanent Voter Card (Nigeria)
+  ];
+  
+  for (const { pattern, country: countryName, confidence: conf } of docTypeKeywords) {
+    if (pattern.test(normalized)) {
+      const country = countries.find(c => c.name === countryName);
+      if (country) {
+        methods.push('DOCUMENT_KEYWORD');
+        return { country: country.name, code: country.code, methods, confidence: conf };
+      }
+    }
+  }
+  
+  // PRIORITY 6: Flag emojis (reliable but lower priority than explicit matches)
+  const flagPattern = /\p{Extended_Pictographic}/gu;
+  const flagMatch = text.match(flagPattern);
+  if (flagMatch) {
+    for (const emoji of flagMatch) {
+      const country = countries.find(c => c.flag === emoji);
+      if (country) {
+        methods.push('FLAG');
+        // Block Egypt flag unless very confident (Egypt flag is 🇪🇬)
+        if (country.name === 'Egypt') {
+          // Only accept if we have other strong indicators
+          const hasEgyptKeywords = /\bEGYPT\b/i.test(normalized) || /\bEGYPTIAN\b/i.test(normalized);
+          if (!hasEgyptKeywords) {
+            continue; // Skip Egypt flag if no other indicators
+          }
+        }
+        return { country: country.name, code: country.code, methods, confidence: 0.85 };
+      }
+    }
+  }
+  
+  // PRIORITY 7: ISO codes (NGA, USA, UAE, etc.) - but block EG unless very confident
+  const isoCodePattern = /\b([A-Z]{2,3})\b/g;
+  const isoMatches = [...normalized.matchAll(isoCodePattern)];
+  for (const match of isoMatches) {
+    const code = match[1].toUpperCase();
+    // BLOCK EG (Egypt) unless we have strong evidence
+    if (code === 'EG' || code === 'EGY') {
+      const hasEgyptKeywords = /\bEGYPT\b/i.test(normalized) || /\bEGYPTIAN\b/i.test(normalized);
+      if (!hasEgyptKeywords) {
+        continue; // Skip Egypt ISO code
+      }
+    }
+    const country = countries.find(c => c.code === code || c.code3 === code);
+    if (country) {
+      methods.push('ISO_CODE');
+      return { country: country.name, code: country.code, methods, confidence: 0.8 };
+    }
+  }
+  
+  // PRIORITY 8: Full country names with word boundaries (prioritize Nigeria first)
+  const priorityCountries = ['Nigeria', 'United States', 'United Kingdom', 'Ghana', 'South Africa', 'Saudi Arabia'];
   const sortedCountries = [...countries].sort((a, b) => {
     const aPriority = priorityCountries.indexOf(a.name);
     const bPriority = priorityCountries.indexOf(b.name);
@@ -315,11 +486,19 @@ function detectCountry(text: string): { country: string; code: string; methods: 
   });
   
   for (const country of sortedCountries) {
+    // Skip Egypt unless we have explicit evidence
+    if (country.name === 'Egypt') {
+      const hasEgyptKeywords = /\bEGYPT\b/i.test(normalized) || /\bEGYPTIAN\b/i.test(normalized);
+      if (!hasEgyptKeywords) {
+        continue; // Skip Egypt
+      }
+    }
+    
     // Check full name with word boundaries
     const nameRegex = new RegExp(`\\b${country.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
     if (nameRegex.test(normalized)) {
       methods.push('TEXT');
-      return { country: country.name, code: country.code, methods };
+      return { country: country.name, code: country.code, methods, confidence: 0.75 };
     }
     
     // Check aliases
@@ -328,18 +507,23 @@ function detectCountry(text: string): { country: string; code: string; methods: 
         const aliasRegex = new RegExp(`\\b${alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
         if (aliasRegex.test(normalized)) {
           methods.push('TEXT');
-          return { country: country.name, code: country.code, methods };
+          return { country: country.name, code: country.code, methods, confidence: 0.75 };
         }
       }
     }
   }
   
-  // Method 5: All words of country name appear (handles OCR spacing issues)
+  // PRIORITY 9: All words of country name appear (handles OCR spacing issues) - LOWEST PRIORITY
   for (const country of sortedCountries) {
+    // Skip Egypt
+    if (country.name === 'Egypt') {
+      continue;
+    }
+    
     const nameWords = country.name.toLowerCase().split(/\s+/);
     if (nameWords.length > 1 && nameWords.every(word => lowerText.includes(word))) {
-      methods.push('TEXT');
-      return { country: country.name, code: country.code, methods };
+      methods.push('TEXT_FALLBACK');
+      return { country: country.name, code: country.code, methods, confidence: 0.6 };
     }
   }
   
@@ -570,12 +754,51 @@ export function extractFields(rawText: string): ExtractedFields {
   }
   
   // Detect country
-  const countryData = detectCountry(rawText);
+  let countryData = detectCountry(rawText);
+  
+  // VALIDATION LAYER: Enforce Nigeria if Nigerian keywords found
+  const hasNigerianKeywords = 
+    /\bNIGERIA\b/i.test(rawText) ||
+    /\bNIGERIAN\b/i.test(rawText) ||
+    /\bNIMC\b/i.test(rawText) ||
+    /\bNIN\b/i.test(rawText) ||
+    /\bECOWAS\b/i.test(rawText) ||
+    /\bFEDERAL\s+REPUBLIC\s+OF\s+NIGERIA\b/i.test(rawText);
+  
+  const hasNigeriaFlag = /🇳🇬/.test(rawText);
+  
+  // If Nigerian indicators found, enforce Nigeria
+  if (hasNigerianKeywords || hasNigeriaFlag) {
+    const countries = (countriesData?.countries || []) as Array<{
+      name: string;
+      code: string;
+      code3: string;
+      flag?: string;
+      aliases?: string[];
+    }>;
+    const nigeria = countries.find(c => c.name === 'Nigeria');
+    if (nigeria) {
+      countryData = {
+        country: nigeria.name,
+        code: nigeria.code,
+        methods: ['VALIDATION_OVERRIDE', ...(countryData?.methods || [])],
+        confidence: 1.0,
+      };
+    }
+  }
+  
+  // BLOCK EGYPT: Reject Egypt unless confidence > 90%
+  if (countryData && countryData.country === 'Egypt' && countryData.confidence < 0.90) {
+    // Reject low-confidence Egypt detection
+    countryData = null;
+  }
+  
   if (countryData) {
     result.country = countryData.country;
     result.country_code = countryData.code;
     result.countryCode = countryData.code; // Legacy
     result.nationality = countryData.country;
+    result.country_confidence_score = countryData.confidence;
     result.detected_by!.country = countryData.methods;
   }
   
