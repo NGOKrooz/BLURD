@@ -127,6 +127,17 @@ export default function Dashboard() {
             <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-white mb-3 sm:mb-4 md:mb-5 leading-tight">
               Prove Anything. <span className="text-blue-400">Reveal Nothing.</span>
             </h1>
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                Identity Proofs
+              </span>
+              <span className="inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                Payment Proofs
+              </span>
+              <span className="inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-300 border border-green-500/30">
+                Reusable ZK Credentials
+              </span>
+            </div>
           </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-3 sm:mt-4">
@@ -157,9 +168,7 @@ export default function Dashboard() {
       {!isConnected && (
         <div className="mb-6 sm:mb-8 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <h3 className="text-base sm:text-lg font-semibold text-yellow-300 mb-1 sm:mb-2">Connect Your Wallet</h3>
-            </div>
+            <h3 className="text-base sm:text-lg font-semibold text-yellow-300">Connect Your Wallet</h3>
             <div className="flex-shrink-0">
               <ConnectButton />
             </div>
@@ -189,51 +198,69 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-3 mb-6 sm:mb-8">
-        <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 p-4 sm:p-6 shadow-sm">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20">
-                <Shield className="h-5 w-5 text-blue-400" />
-              </div>
-            </div>
-            <div className="ml-3 sm:ml-4 min-w-0">
-              <p className="text-xs sm:text-sm font-medium text-gray-400">Total Verified Proofs</p>
-              <p className="text-xl sm:text-2xl font-semibold text-white">{stats.proofs}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 p-6 shadow-sm">
-          <div className="flex items-center">
+      {/* Wallet Balance */}
+      {isConnected && address && (
+        <div className="mb-6 sm:mb-8 bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 p-4 sm:p-6 shadow-sm">
+          <div className="flex items-center min-w-0">
             <div className="flex-shrink-0">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20">
-                <Fingerprint className="h-5 w-5 text-green-400" />
+                <Wallet className="h-5 w-5 text-green-400" />
               </div>
             </div>
-            <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-              <p className="text-xs sm:text-sm font-medium text-gray-400">Last Proof Issued</p>
-              <p className="text-xs sm:text-sm font-semibold text-white break-words">{formatDate(stats.lastIssued)}</p>
-              {stats.lastIssuedType && (
-                <p className="text-xs text-gray-400 capitalize break-words">{stats.lastIssuedType.replace('_', ' ')} {stats.lastProofGenerated ? '(age + nationality proof)' : ''}</p>
+            <div className="ml-3 sm:ml-4 flex-1 min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-400">Wallet Address</p>
+              <p className="text-xs sm:text-sm font-mono text-white break-all">{address}</p>
+              {balance && (
+                <p className="text-xs text-gray-400 mt-1">
+                  Balance: {parseFloat(balance.formatted).toFixed(4)} {balance.symbol}
+                </p>
               )}
             </div>
           </div>
         </div>
+      )}
 
-        <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 p-6 shadow-sm">
-          <div className="flex items-center">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 gap-4 sm:gap-4 sm:grid-cols-3 mb-6 sm:mb-8">
+        <div className="bg-neutral-900/40 backdrop-blur-md rounded-xl border border-white/10 p-5 sm:p-6 shadow-lg hover:border-blue-500/30 transition-all">
+          <div className="flex items-center gap-4">
             <div className="flex-shrink-0">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20">
-                <Lock className="h-5 w-5 text-purple-400" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/20">
+                <Shield className="h-6 w-6 text-blue-400" />
               </div>
             </div>
-            <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-              <p className="text-xs sm:text-sm font-medium text-gray-400">Last Proof Type</p>
-              <p className="text-xs sm:text-sm font-semibold text-white capitalize break-words">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-400 mb-1">Total Verified Proofs</p>
+              <p className="text-2xl sm:text-3xl font-bold text-white">{stats.proofs}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-neutral-900/40 backdrop-blur-md rounded-xl border border-white/10 p-5 sm:p-6 shadow-lg hover:border-green-500/30 transition-all">
+          <div className="flex items-center gap-4">
+            <div className="flex-shrink-0">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-500/20">
+                <Fingerprint className="h-6 w-6 text-green-400" />
+              </div>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-400 mb-1">Last Proof Issued</p>
+              <p className="text-sm sm:text-base font-semibold text-white break-words">{formatDate(stats.lastIssued)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-neutral-900/40 backdrop-blur-md rounded-xl border border-white/10 p-5 sm:p-6 shadow-lg hover:border-purple-500/30 transition-all">
+          <div className="flex items-center gap-4">
+            <div className="flex-shrink-0">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500/20">
+                <Lock className="h-6 w-6 text-purple-400" />
+              </div>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-400 mb-1">Last Proof Type</p>
+              <p className="text-sm sm:text-base font-semibold text-white capitalize break-words">
                 {stats.lastIssuedType ? stats.lastIssuedType.replace('_', ' ') : 'None'}
-                {stats.lastIssuedType && ' (age + nationality proof)'}
               </p>
             </div>
           </div>
@@ -242,44 +269,44 @@ export default function Dashboard() {
 
       {/* Quick Actions */}
       <div className="mb-6 sm:mb-8">
-        <h2 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <h2 className="text-base sm:text-lg font-semibold text-white mb-4 sm:mb-5">Quick Actions</h2>
+        <div className="grid grid-cols-1 gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <Link
             href="/my-proofs"
-            className="group relative rounded-lg border border-white/10 bg-neutral-900/40 backdrop-blur-md p-4 sm:p-6 shadow-sm transition-all hover:bg-neutral-900/60 hover:border-white/20 touch-manipulation min-h-[100px]"
+            className="group relative rounded-xl border border-white/10 bg-neutral-900/40 backdrop-blur-md p-5 sm:p-6 shadow-lg transition-all hover:bg-neutral-900/60 hover:border-blue-500/30 hover:shadow-xl touch-manipulation"
           >
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm sm:text-base font-semibold text-white mb-2">My Proofs</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-white mb-2">My Proofs</h3>
                 <p className="text-xs sm:text-sm text-gray-400">Generate ZK identity proofs</p>
               </div>
-              <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-white flex-shrink-0 mt-0.5" />
+              <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-blue-400 group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" />
             </div>
           </Link>
           
           <Link
             href="/payments"
-            className="group relative rounded-lg border border-white/10 bg-neutral-900/40 backdrop-blur-md p-4 sm:p-6 shadow-sm transition-all hover:bg-neutral-900/60 hover:border-white/20 touch-manipulation min-h-[100px]"
+            className="group relative rounded-xl border border-white/10 bg-neutral-900/40 backdrop-blur-md p-5 sm:p-6 shadow-lg transition-all hover:bg-neutral-900/60 hover:border-green-500/30 hover:shadow-xl touch-manipulation"
           >
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm sm:text-base font-semibold text-white mb-2">Payments</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-white mb-2">Payments</h3>
                 <p className="text-xs sm:text-sm text-gray-400">Send & verify private payments</p>
               </div>
-              <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-white flex-shrink-0 mt-0.5" />
+              <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-green-400 group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" />
             </div>
           </Link>
 
           <Link
             href="/history"
-            className="group relative rounded-lg border border-white/10 bg-neutral-900/40 backdrop-blur-md p-4 sm:p-6 shadow-sm transition-all hover:bg-neutral-900/60 hover:border-white/20 touch-manipulation min-h-[100px]"
+            className="group relative rounded-xl border border-white/10 bg-neutral-900/40 backdrop-blur-md p-5 sm:p-6 shadow-lg transition-all hover:bg-neutral-900/60 hover:border-purple-500/30 hover:shadow-xl touch-manipulation sm:col-span-2 lg:col-span-1"
           >
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm sm:text-base font-semibold text-white mb-2">History</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-white mb-2">History</h3>
                 <p className="text-xs sm:text-sm text-gray-400">View payment & proof history</p>
               </div>
-              <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-white flex-shrink-0 mt-0.5" />
+              <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-purple-400 group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" />
             </div>
           </Link>
         </div>
