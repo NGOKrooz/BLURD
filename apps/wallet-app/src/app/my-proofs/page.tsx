@@ -526,7 +526,7 @@ export default function MyProofs() {
                   <strong>Your credential has been stored locally</strong>
                 </p>
                 <p className="text-xs text-green-200 mt-2">
-                  🔒 <strong>ID Document Deleted:</strong> Your uploaded document has been permanently deleted from your device. Only the extracted data (DOB) and cryptographic hashes have been stored.
+                  🔒 <strong>ID Document Deleted:</strong> Your uploaded document has been permanently deleted from your device. Only the extracted data and cryptographic hashes have been stored.
                 </p>
               </div>
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 mb-4">

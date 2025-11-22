@@ -12,8 +12,9 @@ export interface ExtractedFields {
   countryCode?: string;
   nationality?: string;
   documentNumber?: string;
+  voterNumber?: string; // VIN for Nigerian Voter ID cards
   expiry?: string;
-  documentType?: string; // e.g., "passport", "id_card", "driver_license"
+  documentType?: string; // e.g., "passport", "id_card", "driver_license", "voter_id"
 }
 
 /**
@@ -169,8 +170,16 @@ function extractDocumentNumber(text: string): string | null {
     if (matches) dates.push(...matches);
   });
 
+  // Common words to exclude (not document numbers)
+  const excludeWords = ['INDEPENDENT', 'REPUBLIC', 'FEDERAL', 'DEMOCRATIC', 'STATE', 'NATION', 'COUNTRY', 
+                        'GOVERNMENT', 'OFFICIAL', 'ISSUED', 'VALID', 'EXPIRY', 'EXPIRES', 'BIRTH', 'DATE'];
+  
   // Look for labeled patterns first (most reliable)
+  // Priority: VIN (Voter Identification Number) for Nigerian Voter ID cards
   const labeledPatterns = [
+    // VIN patterns (Nigerian Voter ID) - highest priority, must have numbers
+    /(?:VIN|Voter\s*Identification\s*Number|Voter\s*ID\s*Number|Voter\s*Number)\s*[:\-\.]?\s*([A-Z0-9]{8,20})/gi,
+    // Other document patterns
     /(?:document|doc|id|identification)\s*(?:number|no|#)\s*[:\-\.]?\s*([A-Z0-9]{6,15})/gi,
     /(?:passport)\s*(?:number|no|#)\s*[:\-\.]?\s*([A-Z0-9]{6,15})/gi,
     /(?:serial)\s*(?:number|no|#)\s*[:\-\.]?\s*([A-Z0-9]{4,15})/gi,
@@ -183,16 +192,26 @@ function extractDocumentNumber(text: string): string | null {
     for (const match of matches) {
       if (match[1]) {
         const candidate = match[1].toUpperCase().replace(/\s+/g, '');
+        
+        // Exclude common words that are not document numbers
+        if (excludeWords.includes(candidate)) {
+          continue;
+        }
+        
         // Validate: should be mostly alphanumeric, not a date, and have some uniqueness
-        if (candidate.length >= 6 && candidate.length <= 15) {
+        if (candidate.length >= 6 && candidate.length <= 20) {
           // Check if it's not a date
           const isDate = dates.some(date => candidate.includes(date.replace(/[\/\-\.]/g, '')));
           if (!isDate) {
             // Check if it has enough uniqueness (mix of letters and numbers, or long enough)
             const hasLetters = /[A-Z]/.test(candidate);
             const hasNumbers = /[0-9]/.test(candidate);
-            if ((hasLetters && hasNumbers) || candidate.length >= 8) {
-              return candidate;
+            // For VIN, prefer sequences with both letters and numbers, or very long sequences
+            if ((hasLetters && hasNumbers) || candidate.length >= 10) {
+              // Additional check: VIN should not be a common English word
+              if (candidate.length >= 10 || (hasLetters && hasNumbers)) {
+                return candidate;
+              }
             }
           }
         }
@@ -201,27 +220,30 @@ function extractDocumentNumber(text: string): string | null {
   }
   
   // Fallback: Look for unique alphanumeric sequences that stand out
-  // Pattern: 6-15 chars, mix of letters/numbers, not near date keywords
-  const uniquePattern = /\b([A-Z]{2,}[0-9]{3,}|[0-9]{3,}[A-Z]{2,}|[A-Z0-9]{8,15})\b/g;
+  // Pattern: 8-20 chars, mix of letters/numbers, not near date keywords
+  const uniquePattern = /\b([A-Z]{2,}[0-9]{3,}|[0-9]{3,}[A-Z]{2,}|[A-Z0-9]{8,20})\b/g;
   const uniqueMatches = [...text.matchAll(uniquePattern)];
   
-  // Filter out dates and common patterns
+  // Filter out dates, common words, and common patterns
   const candidates = uniqueMatches
     .map(m => m[1].toUpperCase().replace(/\s+/g, ''))
     .filter(c => {
-      if (c.length < 6 || c.length > 15) return false;
+      if (c.length < 8 || c.length > 20) return false;
+      // Exclude common words
+      if (excludeWords.includes(c)) return false;
       // Exclude if it looks like a date
       if (dates.some(date => c.includes(date.replace(/[\/\-\.]/g, '')))) return false;
-      // Prefer sequences with both letters and numbers
+      // Must have both letters and numbers for better accuracy (or be very long)
       const hasLetters = /[A-Z]/.test(c);
       const hasNumbers = /[0-9]/.test(c);
-      return (hasLetters && hasNumbers) || c.length >= 10;
+      return (hasLetters && hasNumbers) || c.length >= 12;
     })
     .sort((a, b) => {
-      // Prefer longer, more complex sequences
-      const aComplexity = (/[A-Z]/.test(a) ? 1 : 0) + (/[0-9]/.test(a) ? 1 : 0);
-      const bComplexity = (/[A-Z]/.test(b) ? 1 : 0) + (/[0-9]/.test(b) ? 1 : 0);
-      if (bComplexity !== aComplexity) return bComplexity - aComplexity;
+      // Prefer longer, more complex sequences with both letters and numbers
+      const aHasBoth = /[A-Z]/.test(a) && /[0-9]/.test(a);
+      const bHasBoth = /[A-Z]/.test(b) && /[0-9]/.test(b);
+      if (aHasBoth && !bHasBoth) return -1;
+      if (!aHasBoth && bHasBoth) return 1;
       return b.length - a.length;
     });
   
@@ -260,21 +282,32 @@ function extractCountry(text: string): { country?: string; countryCode?: string 
   }
   
   // Method 2: Full official country names (e.g., "Federal Republic of Nigeria", "United States of America")
-  // Sort by length (longest first) to match full names before partial matches
-  const sortedCountries = [...countries].sort((a, b) => b.name.length - a.name.length);
+  // Prioritize Nigeria and other specific countries to avoid false matches
+  // Sort by priority: Nigeria first, then by length (longest first) to match full names before partial matches
+  const priorityCountries = ['Nigeria', 'United States', 'United Kingdom', 'Canada', 'Ghana', 'South Africa'];
+  const sortedCountries = [...countries].sort((a, b) => {
+    const aPriority = priorityCountries.indexOf(a.name);
+    const bPriority = priorityCountries.indexOf(b.name);
+    if (aPriority !== -1 && bPriority !== -1) return aPriority - bPriority;
+    if (aPriority !== -1) return -1;
+    if (bPriority !== -1) return 1;
+    return b.name.length - a.name.length;
+  });
   
   for (const country of sortedCountries) {
-    // Check full name
-    if (lowerText.includes(country.name.toLowerCase())) {
+    // Check full name with word boundaries to avoid partial matches
+    const nameRegex = new RegExp(`\\b${country.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+    if (nameRegex.test(text)) {
       return {
         country: country.name,
         countryCode: country.code,
       };
     }
-    // Check aliases (including full official names)
+    // Check aliases (including full official names) with word boundaries
     if (country.aliases) {
       for (const alias of country.aliases) {
-        if (lowerText.includes(alias.toLowerCase())) {
+        const aliasRegex = new RegExp(`\\b${alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        if (aliasRegex.test(text)) {
           return {
             country: country.name,
             countryCode: country.code,
@@ -376,10 +409,20 @@ export function extractFields(rawText: string): ExtractedFields {
     }
   }
   
-  // Extract document number
+  // Extract document number (including VIN for voter ID cards)
   const docNumber = extractDocumentNumber(rawText);
   if (docNumber) {
-    fields.documentNumber = docNumber;
+    // Check if it's a VIN (Voter Identification Number) - typically longer alphanumeric
+    const isVIN = /VIN|Voter\s*Identification\s*Number|Voter\s*ID/i.test(rawText) && 
+                  docNumber.length >= 10 && 
+                  /[A-Z0-9]{10,}/.test(docNumber);
+    
+    if (isVIN) {
+      fields.voterNumber = docNumber;
+      fields.documentNumber = docNumber; // Also store as documentNumber for compatibility
+    } else {
+      fields.documentNumber = docNumber;
+    }
   }
   
   // Extract country
