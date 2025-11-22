@@ -2,7 +2,8 @@
   "extends": "next/core-web-vitals",
   "rules": {
     "react/no-unescaped-entities": "warn",
-    "jsx-a11y/alt-text": "warn"
+    "jsx-a11y/alt-text": "warn",
+    "@typescript-eslint/no-explicit-any": "off"
   }
 }
 
