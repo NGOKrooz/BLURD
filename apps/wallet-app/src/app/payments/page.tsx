@@ -85,7 +85,7 @@ export default function PaymentsDashboard() {
               <li>No raw amounts are shown (only validation signals)</li>
             </ul>
             <p className="text-xs text-blue-300">
-              Only zero-knowledge validation signals are included, ensuring maximum privacy compliance with "Private Payments & Transactions" track requirements.
+              Only zero-knowledge validation signals are included, ensuring maximum privacy compliance with &quot;Private Payments & Transactions&quot; track requirements.
             </p>
           </div>
         </div>

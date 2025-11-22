@@ -274,7 +274,7 @@ export default function VerifyPayment() {
               className="block w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
             />
             <p className="mt-1 text-xs text-gray-400">
-              Leave empty to verify any amount. If specified, the payment proof's requiredAmount must match exactly.
+              Leave empty to verify any amount. If specified, the payment proof&apos;s requiredAmount must match exactly.
             </p>
           </div>
 

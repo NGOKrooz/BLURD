@@ -524,7 +524,7 @@ export default function MyProofs() {
               </div>
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 mb-4">
                 <p className="text-xs text-blue-300">
-                  💡 Next step: Go to the <strong>"Generate from Credential"</strong> tab to create proofs from this credential.
+                  💡 Next step: Go to the <strong>&quot;Generate from Credential&quot;</strong> tab to create proofs from this credential.
                 </p>
               </div>
               <button

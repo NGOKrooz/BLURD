@@ -111,7 +111,7 @@ export default function CredentialUpload({ onExtract, onError }: CredentialUploa
           <div className="flex items-center justify-between p-4 bg-neutral-900/40 rounded-lg border border-white/10">
             <div className="flex items-center space-x-2">
               {file.type.startsWith('image/') ? (
-                <Image className="h-6 w-6 text-blue-400" />
+                <Image className="h-6 w-6 text-blue-400" alt="Uploaded file" />
               ) : (
                 <File className="h-6 w-6 text-blue-400" />
               )}

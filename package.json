@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Blurd - Private Payments with ZK Attribute Proofs for Zypherpunk Hackathon 2025",
   "private": true,
+  "main": "apps/wallet-app/server.js",
   "workspaces": [
     "apps/*"
   ],
