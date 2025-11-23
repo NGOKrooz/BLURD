@@ -39,3 +39,13 @@ select:focus {
   background-color: rgba(17, 24, 39, 0.6) !important;
   outline: none;
 }
+
+/* Ensure RainbowKit modal appears above everything */
+[data-rk] {
+  z-index: 99999 !important;
+}
+
+/* RainbowKit modal portal */
+div[role="dialog"] {
+  z-index: 99999 !important;
+}

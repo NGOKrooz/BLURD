@@ -4,7 +4,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 export default function WalletConnect() {
   return (
-    <div>
+    <div className="relative z-50">
       <ConnectButton />
     </div>
   );

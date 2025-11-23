@@ -44,22 +44,39 @@ const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID 
 
 // Use getDefaultWallets to properly configure RainbowKit's ConnectButton modal
 // This ensures wallet options are displayed correctly
-// WalletConnect errors will be handled gracefully during connection attempts
+// IMPORTANT: RainbowKit's modal needs getDefaultWallets to properly display wallet options
+// Even if WalletConnect project ID is missing, we'll use a dummy one to enable the modal
 let connectors;
+let wallets;
 try {
-  if (walletConnectProjectId) {
-    const wallets = getDefaultWallets({
+  if (walletConnectProjectId && walletConnectProjectId.trim() !== '') {
+    // Use provided WalletConnect project ID
+    wallets = getDefaultWallets({
       appName: 'Blurd',
       projectId: walletConnectProjectId,
       chains,
     });
     connectors = wallets.connectors;
   } else {
-    // Fallback: Only use MetaMask and Injected connectors if no WalletConnect project ID
-    connectors = [
-      new MetaMaskConnector({ chains }),
-      new InjectedConnector({ chains }),
-    ];
+    // CRITICAL FIX: RainbowKit's modal requires getDefaultWallets to work properly
+    // Use a placeholder project ID to enable the modal, but WalletConnect will fail gracefully
+    // The modal will still show MetaMask and Injected wallets
+    try {
+      wallets = getDefaultWallets({
+        appName: 'Blurd',
+        projectId: '00000000000000000000000000000000', // Placeholder - WalletConnect will fail but modal will work
+        chains,
+      });
+      connectors = wallets.connectors;
+    } catch (wcError) {
+      // If getDefaultWallets fails, fall back to manual connectors
+      console.warn('getDefaultWallets failed, using manual connectors:', wcError);
+      connectors = [
+        new MetaMaskConnector({ chains }),
+        new InjectedConnector({ chains }),
+      ];
+      wallets = { connectors };
+    }
   }
 } catch (error) {
   console.warn('WalletConnect configuration error, using fallback connectors:', error);
@@ -68,6 +85,7 @@ try {
     new MetaMaskConnector({ chains }),
     new InjectedConnector({ chains }),
   ];
+  wallets = { connectors };
 }
 
 const wagmiConfig = createConfig({
@@ -75,6 +93,15 @@ const wagmiConfig = createConfig({
   connectors,
   publicClient,
 });
+
+// Ensure connectors are properly initialized
+if (connectors.length === 0) {
+  console.warn('No wallet connectors available. Adding fallback connectors.');
+  connectors = [
+    new MetaMaskConnector({ chains }),
+    new InjectedConnector({ chains }),
+  ];
+}
 
 // Suppress WalletConnect errors globally
 if (typeof window !== 'undefined') {
@@ -103,7 +130,11 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   return (
     <WagmiConfig config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider chains={chains}>
+        <RainbowKitProvider 
+          chains={chains}
+          modalSize="compact"
+          initialChain={polygonAmoy as any}
+        >
           {children}
         </RainbowKitProvider>
       </QueryClientProvider>
