@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Upload, Shield, Key, Download, CheckCircle2, AlertCircle, User, Calendar, FileText, List, Plus, Eye, Trash2, RefreshCw, Globe, X, Info } from 'lucide-react';
+import { Upload, Shield, Key, Download, CheckCircle2, AlertCircle, User, Calendar, FileText, List, Plus, Eye, Trash2, RefreshCw, Globe, X, Info, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
@@ -384,8 +384,11 @@ export default function MyProofs() {
   };
 
   // Verify Proof (Merchant)
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  
   const handleVerifyProof = async () => {
     setVerifying(true);
+    setVerificationResult(null);
     try {
       let proofData: any;
       
@@ -396,6 +399,7 @@ export default function MyProofs() {
         proofData = JSON.parse(proofJson);
       } else {
         alert('Please upload or paste proof JSON');
+        setVerifying(false);
         return;
       }
 
@@ -407,8 +411,10 @@ export default function MyProofs() {
       );
 
       setVerificationResult({ valid: isValid, proofData });
+      setShowVerificationModal(true); // Show modal popup
     } catch (error: any) {
       setVerificationResult({ valid: false, error: error.message });
+      setShowVerificationModal(true); // Show modal even for errors
     } finally {
       setVerifying(false);
     }
@@ -1018,39 +1024,24 @@ export default function MyProofs() {
       {/* Verify Proof Tab (Merchant) */}
       {activeTab === 'verify' && (
         <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-4 sm:p-6 lg:p-8 overflow-x-hidden">
-          <div className="mb-4 sm:mb-6">
-            <h2 className="text-base sm:text-lg font-semibold text-white mb-2">Verify Proof (Merchant View)</h2>
-            <p className="text-xs sm:text-sm text-gray-400 break-words">Upload a proof.json file to verify its validity</p>
+          <div className="mb-6 sm:mb-8">
+            <div className="flex items-center space-x-3 mb-2">
+              <Shield className="h-6 w-6 sm:h-7 sm:w-7 text-blue-400" />
+              <div>
+                <h2 className="text-lg sm:text-xl font-semibold text-white">Verify Proof</h2>
+                <p className="text-xs sm:text-sm text-gray-400 mt-1">Upload or paste a proof.json file to verify its validity</p>
+              </div>
+            </div>
           </div>
 
-          {verificationResult && (
-            <div className={`mb-6 rounded-lg p-4 ${
-              verificationResult.valid
-                ? 'bg-green-500/10 border border-green-500/20'
-                : 'bg-red-500/10 border border-red-500/20'
-            }`}>
-              <div className="flex items-center space-x-3 mb-2">
-                {verificationResult.valid ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-400" />
-                ) : (
-                  <AlertCircle className="h-5 w-5 text-red-400" />
-                )}
-                <p className={`text-sm font-semibold ${
-                  verificationResult.valid ? 'text-green-300' : 'text-red-300'
-                }`}>
-                  {verificationResult.valid ? 'Proof Valid' : 'Proof Invalid'}
-                </p>
-              </div>
-              {verificationResult.error && (
-                <p className="text-xs text-red-300 mt-2">{verificationResult.error}</p>
-              )}
-            </div>
-          )}
-
-          <div className="space-y-4 sm:space-y-6">
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">Upload proof.json</label>
-              <div className="border border-white/10 border-dashed rounded-lg p-4 sm:p-6 text-center touch-manipulation">
+          <div className="space-y-6">
+            {/* File Upload Section */}
+            <div className="bg-neutral-800/40 rounded-lg border border-white/10 p-4 sm:p-6">
+              <label className="block text-sm font-medium text-gray-300 mb-3 flex items-center space-x-2">
+                <Upload className="h-4 w-4" />
+                <span>Upload proof.json file</span>
+              </label>
+              <div className="border-2 border-dashed border-white/20 rounded-lg p-8 sm:p-12 text-center hover:border-blue-500/50 transition-colors bg-white/5 hover:bg-white/10">
                 <input
                   type="file"
                   accept=".json"
@@ -1060,46 +1051,146 @@ export default function MyProofs() {
                 />
                 <label
                   htmlFor="proof-file"
-                  className="cursor-pointer flex flex-col items-center space-y-2 min-h-[44px] justify-center"
+                  className="cursor-pointer flex flex-col items-center space-y-3 min-h-[44px] justify-center"
                 >
-                  <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 flex-shrink-0" />
-                  <span className="text-xs sm:text-sm text-gray-400 break-words px-2">
-                    {proofFile ? proofFile.name : 'Click to upload proof.json'}
-                  </span>
+                  <div className="p-3 rounded-full bg-blue-500/10 border border-blue-500/20">
+                    <Upload className="h-8 w-8 sm:h-10 sm:w-10 text-blue-400" />
+                  </div>
+                  <div>
+                    <span className="text-sm sm:text-base font-medium text-white block">
+                      {proofFile ? (
+                        <span className="text-green-400 flex items-center justify-center space-x-2">
+                          <CheckCircle2 className="h-4 w-4" />
+                          <span>{proofFile.name}</span>
+                        </span>
+                      ) : (
+                        'Click to upload or drag and drop'
+                      )}
+                    </span>
+                    <span className="text-xs text-gray-400 mt-1 block">JSON file up to 10MB</span>
+                  </div>
                 </label>
               </div>
             </div>
 
-            <div className="text-center text-xs sm:text-sm text-gray-400">OR</div>
+            {/* Divider */}
+            <div className="flex items-center">
+              <div className="flex-1 border-t border-white/10"></div>
+              <span className="px-4 text-xs sm:text-sm text-gray-400 font-medium">OR</span>
+              <div className="flex-1 border-t border-white/10"></div>
+            </div>
 
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">Paste proof JSON</label>
+            {/* JSON Input Section */}
+            <div className="bg-neutral-800/40 rounded-lg border border-white/10 p-4 sm:p-6">
+              <label className="block text-sm font-medium text-gray-300 mb-3 flex items-center space-x-2">
+                <FileText className="h-4 w-4" />
+                <span>Paste proof JSON</span>
+              </label>
               <textarea
                 value={proofJson}
                 onChange={(e) => setProofJson(e.target.value)}
-                placeholder='{"proof": {...}, "publicSignals": [...]}'
-                rows={8}
-                className="block w-full rounded-md border border-white/10 bg-white/5 px-3 py-2.5 sm:py-2 text-xs sm:text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none font-mono min-h-[120px] touch-manipulation overflow-x-auto"
+                placeholder='{"proof": {...}, "publicSignals": [...], "circuitType": "age18"}'
+                rows={10}
+                className="block w-full rounded-lg border border-white/10 bg-neutral-900/60 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none font-mono resize-none"
               />
+              <p className="text-xs text-gray-400 mt-2">Paste the complete proof JSON object here</p>
             </div>
 
+            {/* Verify Button */}
             <button
               onClick={handleVerifyProof}
               disabled={verifying || (!proofFile && !proofJson.trim())}
-              className={`w-full rounded-md px-4 sm:px-6 py-3 text-xs sm:text-sm font-semibold text-white transition-colors flex items-center justify-center space-x-2 touch-manipulation min-h-[44px] ${
+              className={`w-full rounded-lg px-6 py-4 text-sm font-semibold text-white transition-all flex items-center justify-center space-x-3 touch-manipulation min-h-[52px] shadow-lg ${
                 verifying || (!proofFile && !proofJson.trim())
-                  ? 'bg-gray-600 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700'
+                  ? 'bg-gray-600/50 cursor-not-allowed opacity-50'
+                  : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 active:scale-[0.98] shadow-blue-500/20 hover:shadow-blue-500/30'
               }`}
             >
-              <Key className="h-4 w-4 flex-shrink-0" />
-              <span className="truncate">{verifying ? 'Verifying...' : 'Verify Proof'}</span>
+              {verifying ? (
+                <>
+                  <RefreshCw className="h-5 w-5 animate-spin" />
+                  <span>Verifying Proof...</span>
+                </>
+              ) : (
+                <>
+                  <Shield className="h-5 w-5" />
+                  <span>Verify Proof</span>
+                </>
+              )}
             </button>
 
-            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-              <p className="text-xs text-blue-300">
-                <strong>Privacy Guarantee:</strong> Verification only checks proof validity. No personal data is exposed or stored.
+            {/* Privacy Notice */}
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 flex items-start space-x-3">
+              <Info className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-blue-300 mb-1">Privacy Guarantee</p>
+                <p className="text-xs text-blue-200/80">
+                  Verification only checks proof validity using zero-knowledge cryptography. No personal data is exposed, stored, or transmitted.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Verification Result Modal */}
+      {showVerificationModal && verificationResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-neutral-900 border border-white/20 rounded-xl p-6 sm:p-8 max-w-md w-full mx-auto my-auto shadow-2xl overflow-x-hidden animate-in fade-in zoom-in duration-200">
+            <div className="text-center">
+              {/* Icon */}
+              <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full ${
+                verificationResult.valid 
+                  ? 'bg-green-500/20 border-4 border-green-500/30' 
+                  : 'bg-red-500/20 border-4 border-red-500/30'
+              }`}>
+                {verificationResult.valid ? (
+                  <CheckCircle2 className="h-10 w-10 text-green-400" />
+                ) : (
+                  <XCircle className="h-10 w-10 text-red-400" />
+                )}
+              </div>
+
+              {/* Title */}
+              <h3 className={`text-2xl font-bold mb-2 ${
+                verificationResult.valid ? 'text-green-400' : 'text-red-400'
+              }`}>
+                {verificationResult.valid ? 'Proof Valid ✓' : 'Proof Invalid ✗'}
+              </h3>
+
+              {/* Message */}
+              <p className="text-sm text-gray-300 mb-6">
+                {verificationResult.valid 
+                  ? 'The zero-knowledge proof has been successfully verified. The proof is cryptographically valid.'
+                  : verificationResult.error || 'The proof could not be verified. Please check the proof file and try again.'
+                }
               </p>
+
+              {/* Additional Info */}
+              {verificationResult.valid && verificationResult.proofData && (
+                <div className="bg-neutral-800/60 rounded-lg p-4 mb-6 text-left">
+                  <p className="text-xs text-gray-400 mb-2">Circuit Type:</p>
+                  <p className="text-sm font-semibold text-white capitalize">
+                    {verificationResult.proofData.circuitType || 'Unknown'}
+                  </p>
+                </div>
+              )}
+
+              {/* Close Button */}
+              <button
+                onClick={() => {
+                  setShowVerificationModal(false);
+                  setProofFile(null);
+                  setProofJson('');
+                }}
+                className={`w-full rounded-lg px-6 py-3 text-sm font-semibold text-white transition-all ${
+                  verificationResult.valid
+                    ? 'bg-green-600 hover:bg-green-700 active:scale-[0.98]'
+                    : 'bg-red-600 hover:bg-red-700 active:scale-[0.98]'
+                }`}
+              >
+                {verificationResult.valid ? 'Continue' : 'Try Again'}
+              </button>
             </div>
           </div>
         </div>
