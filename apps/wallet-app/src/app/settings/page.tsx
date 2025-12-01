@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { Copy, Check, Settings as SettingsIcon } from 'lucide-react';
-import { useAccount } from 'wagmi';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useStarknet } from '@/providers/starknet-provider';
+import WalletConnect from '@/components/WalletConnect';
 
 export default function Settings() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected } = useStarknet();
   const [copied, setCopied] = useState<string | null>(null);
 
   const copyToClipboard = (text: string, type: string) => {
@@ -34,7 +34,7 @@ export default function Settings() {
             {!isConnected ? (
               <div>
                 <p className="text-sm text-gray-300 mb-4">Connect your wallet to view your address</p>
-                <ConnectButton />
+                <WalletConnect />
               </div>
             ) : (
               <div>

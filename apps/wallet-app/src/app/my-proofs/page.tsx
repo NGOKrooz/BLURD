@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Upload, Shield, Key, Download, CheckCircle2, AlertCircle, User, Calendar, FileText, List, Plus, Eye, Trash2, RefreshCw, Globe, X, Info, XCircle } from 'lucide-react';
 import Link from 'next/link';
-import { useAccount } from 'wagmi';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useStarknet } from '@/providers/starknet-provider';
+import WalletConnect from '@/components/WalletConnect';
 import { generateAgeProof, generateUniquenessProof, generateCountryProof, downloadProof, storeProof, loadStoredProofs, ProofResult } from '@/lib/zk/proof';
 import CredentialUpload from '@/components/CredentialUpload';
 import { computeIdCommit, computeUniqueKey, computeUniqueKeyHash, generateNonce } from '@/lib/crypto';
@@ -34,7 +34,7 @@ interface Credential {
 }
 
 export default function MyProofs() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected } = useStarknet();
   const [activeTab, setActiveTab] = useState<TabType>('issue');
   const [mounted, setMounted] = useState(false);
   
@@ -462,7 +462,7 @@ export default function MyProofs() {
               <p className="text-xs sm:text-sm text-yellow-300 mb-1 sm:mb-2">Connect your wallet to use proof features</p>
             </div>
             <div className="flex-shrink-0">
-              <ConnectButton />
+              <WalletConnect />
             </div>
           </div>
         </div>

@@ -2,48 +2,42 @@
 
 import { useState, useEffect } from 'react';
 import { Wallet, Copy, CheckCircle2, ExternalLink } from 'lucide-react';
-import { detectAndConnectWallet, getStarknetBalance } from '@/lib/starknet';
+import { useStarknet } from '@/providers/starknet-provider';
+import { getStarknetBalance } from '@/lib/starknet';
 
 /**
  * Wallet Connected Screen Component
- * Displays wallet address, STRK balance, and connection status
+ * Displays wallet address, STR balance, and connection status
  * Integrates with Starknet wallet detection (Braavos/Argent X)
  */
 export default function WalletConnected() {
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const { address, isConnected, connect, disconnect } = useStarknet();
   const [balance, setBalance] = useState<string | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Fetch balance when address changes
   useEffect(() => {
-    checkWalletConnection();
-  }, []);
+    if (isConnected && address) {
+      fetchBalance();
+    } else {
+      setBalance(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected, address]);
 
-  const checkWalletConnection = async () => {
+  const fetchBalance = async () => {
+    if (!address) return;
+    
     try {
-      // Check if wallet is already connected
-      if (typeof window !== 'undefined' && (window.starknet || window.starknet_braavos || window.starknet_argentX)) {
-        const wallet = await detectAndConnectWallet();
-        if (wallet && wallet.selectedAddress) {
-          setWalletAddress(wallet.selectedAddress);
-          setIsConnected(true);
-          
-          // Fetch balance
-          try {
-            const bal = await getStarknetBalance(wallet.selectedAddress);
-            // Convert from wei-like units to STRK (assuming 18 decimals)
-            const balanceStr = (Number(bal) / 1e18).toFixed(4);
-            setBalance(balanceStr);
-          } catch (err) {
-            console.error('Failed to fetch balance:', err);
-            setBalance('0.0000');
-          }
-        }
-      }
+      setLoading(true);
+      const bal = await getStarknetBalance(address);
+      // Convert from wei-like units to STR (18 decimals)
+      const balanceStr = (Number(bal) / 1e18).toFixed(4);
+      setBalance(balanceStr);
     } catch (err) {
-      console.error('Wallet not connected:', err);
-      setIsConnected(false);
+      console.error('Failed to fetch balance:', err);
+      setBalance('0.0000'); // Fallback for demo
     } finally {
       setLoading(false);
     }
@@ -52,33 +46,23 @@ export default function WalletConnected() {
   const handleConnect = async () => {
     try {
       setLoading(true);
-      const wallet = await detectAndConnectWallet();
-      if (wallet && wallet.selectedAddress) {
-        setWalletAddress(wallet.selectedAddress);
-        setIsConnected(true);
-        
-        // Fetch balance
-        const bal = await getStarknetBalance(wallet.selectedAddress);
-        const balanceStr = (Number(bal) / 1e18).toFixed(4);
-        setBalance(balanceStr);
-      }
+      await connect();
+      // Balance will be fetched automatically via useEffect
     } catch (err: any) {
       console.error('Connection failed:', err);
-      alert(err.message || 'Failed to connect wallet. Please install Braavos or Argent X.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDisconnect = () => {
-    setWalletAddress(null);
+    disconnect();
     setBalance(null);
-    setIsConnected(false);
   };
 
   const handleCopy = () => {
-    if (walletAddress) {
-      navigator.clipboard.writeText(walletAddress);
+    if (address) {
+      navigator.clipboard.writeText(address);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -89,7 +73,7 @@ export default function WalletConnected() {
     return `${addr.substring(0, 6)}…${addr.substring(addr.length - 4)}`;
   };
 
-  if (loading) {
+  if (loading && !isConnected) {
     return (
       <div className="bg-gradient-to-br from-neutral-900/90 via-neutral-800/90 to-neutral-900/90 backdrop-blur-md rounded-xl border border-white/10 p-6 sm:p-8 shadow-xl">
         <div className="flex items-center justify-center space-x-3">
@@ -100,7 +84,7 @@ export default function WalletConnected() {
     );
   }
 
-  if (!isConnected || !walletAddress) {
+  if (!isConnected || !address) {
     return (
       <div className="bg-gradient-to-br from-neutral-900/90 via-neutral-800/90 to-neutral-900/90 backdrop-blur-md rounded-xl border border-white/10 p-6 sm:p-8 shadow-xl">
         <div className="text-center space-y-4">
@@ -153,8 +137,8 @@ export default function WalletConnected() {
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-mono text-white break-all">{walletAddress}</p>
-            <p className="text-xs text-gray-500 mt-1 font-mono">{truncateAddress(walletAddress)}</p>
+            <p className="text-sm font-mono text-white break-all">{address}</p>
+            <p className="text-xs text-gray-500 mt-1 font-mono">{truncateAddress(address)}</p>
           </div>
           <button
             onClick={handleCopy}
@@ -170,17 +154,19 @@ export default function WalletConnected() {
         </div>
       </div>
 
-      {/* STRK Balance */}
+      {/* STR Balance */}
       <div className="mb-6">
         <label className="block text-xs font-medium text-gray-400 mb-2">Balance</label>
         <div className="flex items-center space-x-3 bg-neutral-800/50 rounded-lg p-4 border border-white/5">
           <div className="flex-shrink-0">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20">
-              <span className="text-lg font-bold text-green-400">STRK</span>
+              <span className="text-lg font-bold text-green-400">STR</span>
             </div>
           </div>
           <div className="flex-1">
-            <p className="text-2xl font-bold text-white">{balance || '0.0000'}</p>
+            <p className="text-2xl font-bold text-white">
+              {loading ? '...' : (balance || '0.0000')}
+            </p>
             <p className="text-xs text-gray-500 mt-1">Starknet Testnet</p>
           </div>
         </div>
@@ -188,7 +174,7 @@ export default function WalletConnected() {
 
       {/* View on Explorer */}
       <a
-        href={`https://sepolia.starkscan.co/contract/${walletAddress}`}
+        href={`https://sepolia.starkscan.co/contract/${address}`}
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center justify-center space-x-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"

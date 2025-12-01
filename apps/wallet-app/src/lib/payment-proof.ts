@@ -20,7 +20,7 @@ export interface PrivacyPreservingPaymentProof {
   timestampVerified: boolean; // Whether timestamp is valid
   publicMetadata: {
     requiredAmount: number | null; // Required amount (if specified by merchant)
-    paymentMethod: string; // e.g., "simulated-matic"
+    paymentMethod: string; // e.g., "starknet-testnet"
   };
 }
 
@@ -168,7 +168,7 @@ export function createPrivacyPreservingPaymentProof(
     timestampVerified,
     publicMetadata: {
       requiredAmount: requiredAmount || null,
-      paymentMethod: 'simulated-matic',
+      paymentMethod: 'starknet-testnet',
     },
   };
 }

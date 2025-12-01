@@ -14,7 +14,8 @@ import {
   type PrivacyPreservingPaymentProof,
   type ProofBinding,
 } from '@/lib/payment-proof';
-import { sendStarknetPayment, detectAndConnectWallet } from '@/lib/starknet';
+import { sendStarknetPayment } from '@/lib/starknet';
+import { useStarknet } from '@/providers/starknet-provider';
 import TransactionLoading from '@/components/TransactionLoading';
 import ZKProofAttached from '@/components/ZKProofAttached';
 
@@ -27,8 +28,7 @@ import ZKProofAttached from '@/components/ZKProofAttached';
  * - ZK proof binding
  */
 export default function SendPaymentEnhanced() {
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
+  const { address, isConnected, connect } = useStarknet();
 
   // Form state
   const [recipient, setRecipient] = useState('');
@@ -45,25 +45,6 @@ export default function SendPaymentEnhanced() {
   const [paymentProof, setPaymentProof] = useState<PrivacyPreservingPaymentProof | null>(null);
   const [internalData, setInternalData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // Check wallet connection on mount
-  useEffect(() => {
-    checkWallet();
-  }, []);
-
-  const checkWallet = async () => {
-    try {
-      if (typeof window !== 'undefined' && (window.starknet || window.starknet_braavos || window.starknet_argentX)) {
-        const wallet = await detectAndConnectWallet();
-        if (wallet && wallet.selectedAddress) {
-          setWalletAddress(wallet.selectedAddress);
-          setIsConnected(true);
-        }
-      }
-    } catch (err) {
-      console.error('Wallet not connected:', err);
-    }
-  };
 
   // Load available proofs on mount
   useEffect(() => {
@@ -102,18 +83,14 @@ export default function SendPaymentEnhanced() {
 
   const handleConnectWallet = async () => {
     try {
-      const wallet = await detectAndConnectWallet();
-      if (wallet && wallet.selectedAddress) {
-        setWalletAddress(wallet.selectedAddress);
-        setIsConnected(true);
-      }
+      await connect();
     } catch (err: any) {
       setError(err.message || 'Failed to connect wallet. Please install Braavos or Argent X.');
     }
   };
 
   const handleSendPayment = async () => {
-    if (!isConnected || !walletAddress) {
+    if (!isConnected || !address) {
       setError('Please connect your Starknet wallet first');
       return;
     }
@@ -265,7 +242,7 @@ export default function SendPaymentEnhanced() {
               </div>
               <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-400">Amount:</p>
-                <p className="text-xs text-white font-semibold">{internalData.amount} STRK</p>
+                <p className="text-xs text-white font-semibold">{internalData.amount} STR</p>
               </div>
               <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-400">Transaction Hash:</p>

@@ -3,14 +3,14 @@
 import { useState } from 'react';
 import { Download, Shield, CheckCircle2, AlertCircle, User, Calendar, Globe } from 'lucide-react';
 import Link from 'next/link';
-import { useAccount } from 'wagmi';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useStarknet } from '@/providers/starknet-provider';
+import WalletConnect from '@/components/WalletConnect';
 import { generateAgeProof, generateUniquenessProof, generateCountryProof, downloadProof, storeProof } from '@/lib/zk/proof';
 
 type ProofType = 'age18' | 'uniqueness' | 'country' | null;
 
 export default function GenerateIdentityProof() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected } = useStarknet();
   const [proofType, setProofType] = useState<ProofType>(null);
   const [userAge, setUserAge] = useState('');
   const [userCountryCode, setUserCountryCode] = useState('');
@@ -138,7 +138,7 @@ export default function GenerateIdentityProof() {
               <div>
                 <p className="text-sm text-yellow-300 mb-2">Connect your wallet to generate proofs</p>
               </div>
-              <ConnectButton />
+              <WalletConnect />
             </div>
           </div>
         )}

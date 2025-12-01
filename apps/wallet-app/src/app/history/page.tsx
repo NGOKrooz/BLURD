@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { History as HistoryIcon, ExternalLink, CheckCircle2, Clock, Shield, Send } from 'lucide-react';
 import Link from 'next/link';
-import { useAccount } from 'wagmi';
+import { useStarknet } from '@/providers/starknet-provider';
 import { loadStoredProofs, ProofResult } from '@/lib/zk/proof';
 
 interface Payment {
@@ -25,7 +25,7 @@ interface Activity {
 }
 
 export default function PaymentHistory() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected } = useStarknet();
   const [activities, setActivities] = useState<Activity[]>([]);
 
   useEffect(() => {
@@ -155,7 +155,7 @@ export default function PaymentHistory() {
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-xs text-gray-400 flex-shrink-0">Amount:</p>
-                        <p className="text-xs text-white font-semibold break-words">{activity.payment.amount} MATIC</p>
+                        <p className="text-xs text-white font-semibold break-words">{activity.payment.amount} STR</p>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-xs text-gray-400 flex-shrink-0">TX ID:</p>

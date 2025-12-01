@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Shield, Key, CheckCircle2, Clock, Fingerprint, Lock, Wallet } from 'lucide-react';
-import { useAccount, useBalance } from 'wagmi';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useStarknet } from '@/providers/starknet-provider';
+import { getStarknetBalance } from '@/lib/starknet';
 import { loadStoredProofs } from '@/lib/zk/proof';
+import WalletConnect from '@/components/WalletConnect';
 
 interface CredentialStat {
   totalIssued: number;
@@ -17,10 +18,8 @@ interface CredentialStat {
 }
 
 export default function Dashboard() {
-  const { address, isConnected } = useAccount();
-  const { data: balance } = useBalance({
-    address: address,
-  });
+  const { address, isConnected } = useStarknet();
+  const [balance, setBalance] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [stats, setStats] = useState<CredentialStat>({
     totalIssued: 0,
@@ -34,6 +33,20 @@ export default function Dashboard() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Fetch STR balance when connected
+  useEffect(() => {
+    if (isConnected && address) {
+      getStarknetBalance(address).then((bal) => {
+        const balanceStr = (Number(bal) / 1e18).toFixed(4);
+        setBalance(balanceStr);
+      }).catch(() => {
+        setBalance('0.0000');
+      });
+    } else {
+      setBalance(null);
+    }
+  }, [isConnected, address]);
 
   useEffect(() => {
     // Load credential stats from localStorage
@@ -168,9 +181,9 @@ export default function Dashboard() {
       {!isConnected && (
         <div className="mb-6 sm:mb-8 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h3 className="text-base sm:text-lg font-semibold text-yellow-300">Connect Your Wallet</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-yellow-300">Connect Your Starknet Wallet</h3>
             <div className="flex-shrink-0">
-              <ConnectButton />
+              <WalletConnect />
             </div>
           </div>
         </div>
@@ -190,29 +203,7 @@ export default function Dashboard() {
               <p className="text-xs sm:text-sm font-mono text-white break-all">{address}</p>
               {balance && (
                 <p className="text-xs text-gray-400 mt-1">
-                  Balance: {parseFloat(balance.formatted).toFixed(4)} {balance.symbol}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Wallet Balance */}
-      {isConnected && address && (
-        <div className="mb-6 sm:mb-8 bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 p-4 sm:p-6 shadow-sm">
-          <div className="flex items-center min-w-0">
-            <div className="flex-shrink-0">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20">
-                <Wallet className="h-5 w-5 text-green-400" />
-              </div>
-            </div>
-            <div className="ml-3 sm:ml-4 flex-1 min-w-0">
-              <p className="text-xs sm:text-sm font-medium text-gray-400">Wallet Address</p>
-              <p className="text-xs sm:text-sm font-mono text-white break-all">{address}</p>
-              {balance && (
-                <p className="text-xs text-gray-400 mt-1">
-                  Balance: {parseFloat(balance.formatted).toFixed(4)} {balance.symbol}
+                  Balance: {balance} STR
                 </p>
               )}
             </div>

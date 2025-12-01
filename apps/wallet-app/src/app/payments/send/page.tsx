@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Send, CheckCircle2, Download, AlertCircle, ArrowLeft, Shield, Lock } from 'lucide-react';
 import Link from 'next/link';
-import { useAccount, useSignMessage } from 'wagmi';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useStarknet } from '@/providers/starknet-provider';
+import WalletConnect from '@/components/WalletConnect';
 import { loadStoredProofs, ProofResult } from '@/lib/zk/proof';
 import {
   createInternalPaymentData,
@@ -19,8 +19,7 @@ import {
 import { sendStarknetPayment } from '@/lib/starknet';
 
 export default function SendPayment() {
-  const { address, isConnected } = useAccount();
-  const { signMessageAsync } = useSignMessage();
+  const { address, isConnected } = useStarknet();
 
   // Form state
   const [recipient, setRecipient] = useState('');
@@ -167,7 +166,7 @@ export default function SendPayment() {
                 <p className="text-xs sm:text-sm text-yellow-300 mb-1 sm:mb-2">Connect your wallet to send payments</p>
               </div>
               <div className="flex-shrink-0">
-                <ConnectButton />
+                <WalletConnect />
               </div>
             </div>
           </div>
@@ -196,7 +195,7 @@ export default function SendPayment() {
               </div>
               <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-400">Amount:</p>
-                <p className="text-xs text-white font-semibold">{internalData.amount} MATIC</p>
+                <p className="text-xs text-white font-semibold">{internalData.amount} STR</p>
               </div>
               <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-400">Transaction Hash:</p>
@@ -293,7 +292,7 @@ export default function SendPayment() {
 
             {/* Amount */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">Amount (MATIC)</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">Amount (STR)</label>
               <input
                 type="number"
                 value={amount}

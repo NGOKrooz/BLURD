@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Layout from '@/components/Layout'
-import { WalletProvider } from '@/providers/wallet-provider'
+import { StarknetProvider } from '@/providers/starknet-provider'
 import { ErrorSuppressor } from '@/components/ErrorSuppressor'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -21,9 +21,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <ErrorSuppressor>
-          <WalletProvider>
+          <StarknetProvider>
             <Layout>{children}</Layout>
-          </WalletProvider>
+          </StarknetProvider>
         </ErrorSuppressor>
       </body>
     </html>

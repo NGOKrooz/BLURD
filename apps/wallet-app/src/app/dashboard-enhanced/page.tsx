@@ -5,21 +5,19 @@ import Link from 'next/link';
 import { ArrowRight, Shield, Key, Fingerprint, Lock, Wallet, Send, History, Settings, Upload, CheckCircle2 } from 'lucide-react';
 import { loadStoredProofs } from '@/lib/zk/proof';
 import WalletConnected from '@/components/WalletConnected';
-import { detectAndConnectWallet, getStarknetBalance } from '@/lib/starknet';
+import { useStarknet } from '@/providers/starknet-provider';
 
 /**
  * Enhanced Dashboard - Starknet-native, Privacy-first
  * Features:
- * - Wallet connection status with STRK balance
+ * - Wallet connection status with STR balance
  * - Overview cards for proofs and payments
  * - Quick actions navigation
  * - Clean, hackathon-ready design
  */
 export default function DashboardEnhanced() {
+  const { isConnected } = useStarknet();
   const [mounted, setMounted] = useState(false);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [balance, setBalance] = useState<string | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
   const [stats, setStats] = useState({
     totalProofs: 0,
     totalPayments: 0,
@@ -29,33 +27,8 @@ export default function DashboardEnhanced() {
 
   useEffect(() => {
     setMounted(true);
-    checkWallet();
     loadStats();
   }, []);
-
-  const checkWallet = async () => {
-    try {
-      if (typeof window !== 'undefined' && (window.starknet || window.starknet_braavos || window.starknet_argentX)) {
-        const wallet = await detectAndConnectWallet();
-        if (wallet && wallet.selectedAddress) {
-          setWalletAddress(wallet.selectedAddress);
-          setIsConnected(true);
-          
-          // Fetch balance
-          try {
-            const bal = await getStarknetBalance(wallet.selectedAddress);
-            const balanceStr = (Number(bal) / 1e18).toFixed(4);
-            setBalance(balanceStr);
-          } catch (err) {
-            console.error('Failed to fetch balance:', err);
-            setBalance('0.0000');
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Wallet not connected:', err);
-    }
-  };
 
   const loadStats = () => {
     try {
