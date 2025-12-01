@@ -3,10 +3,7 @@
  */
 
 import { Request, Response } from 'express';
-import { Database } from '../database-memory';
-
-// In-memory proof storage (for demo - in production use proper DB)
-const proofStore = new Map<string, { proof: any; publicSignals: any[]; timestamp: number }>();
+import type { Database } from '../database';
 
 /**
  * Verify a ZK proof
@@ -50,7 +47,8 @@ export async function verifyProofRoute(
  */
 export async function storeProof(
   req: Request,
-  res: Response
+  res: Response,
+  db: Database
 ) {
   try {
     const { proof, publicSignals, proofHash } = req.body;
@@ -61,10 +59,11 @@ export async function storeProof(
       });
     }
 
-    proofStore.set(proofHash, {
+    await db.saveProof({
       proof,
       publicSignals,
       timestamp: Date.now(),
+      proofHash,
     });
 
     res.json({
@@ -85,7 +84,8 @@ export async function storeProof(
  */
 export async function getProofByHash(
   req: Request,
-  res: Response
+  res: Response,
+  db: Database
 ) {
   try {
     const { proofHash } = req.params;
@@ -96,7 +96,8 @@ export async function getProofByHash(
       });
     }
 
-    const proofData = proofStore.get(proofHash);
+    const proofs = await db.listProofs();
+    const proofData = proofs.find((p: any) => p.proofHash === proofHash) ?? null;
 
     if (!proofData) {
       return res.status(404).json({

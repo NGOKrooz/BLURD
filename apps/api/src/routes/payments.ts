@@ -3,7 +3,7 @@
  */
 
 import { Request, Response } from 'express';
-import { Database } from '../database';
+import type { Database } from '../database';
 import { verifyProof } from '../zk/utils/verifier';
 
 export async function verifyPayment(
@@ -24,13 +24,22 @@ export async function verifyPayment(
     const zkResult = await verifyProof(proof, publicSignals, null);
 
     // Look up payment
-    const lookupHash = proofHash || (txid ? null : null);
-    let payment = null;
+    let payment = null as
+      | {
+          txid: string;
+          amount: number;
+          proofHash: string;
+          timestamp: number;
+          confirmed: boolean;
+        }
+      | null;
+
+    const payments = await db.listPayments();
 
     if (txid) {
-      payment = db.getPaymentByTxId(txid);
+      payment = payments.find((p: any) => p.txid === txid) ?? null;
     } else if (proofHash) {
-      payment = db.getPaymentByProofHash(proofHash);
+      payment = payments.find((p: any) => p.proofHash === proofHash) ?? null;
     } else {
       return res.status(400).json({
         error: 'Must provide either txid or proofHash',
@@ -82,7 +91,8 @@ export async function checkPayment(
       });
     }
 
-    const payment = db.getPaymentByTxId(txid);
+    const payments = await db.listPayments();
+    const payment = payments.find((p: any) => p.txid === txid) ?? null;
 
     if (!payment) {
       return res.status(404).json({
@@ -128,7 +138,7 @@ export async function storePayment(
       confirmed: false,
     };
 
-    db.storePayment(payment);
+    await db.savePayment(payment);
 
     res.json({
       success: true,

@@ -5,8 +5,7 @@
 
 import express from 'express';
 import cors from 'cors';
-// Use in-memory database for demo (avoids SQLite native module compilation)
-import { Database } from './database-memory';
+import { JSONDatabase, type Database } from './database';
 import { verifyPayment, checkPayment, storePayment } from './routes/payments';
 import { verifyProofRoute, storeProof, getProofByHash } from './routes/proofs';
 import { registerCredential, checkUnique } from './routes/credentials';
@@ -18,17 +17,19 @@ const PORT = process.env.PORT || 3002;
 app.use(cors());
 app.use(express.json());
 
-// Initialize database
-const db = new Database();
-db.init();
+// Initialize database (JSON file with automatic in-memory fallback)
+const db: Database = new JSONDatabase();
+db.init().catch((err) => {
+  console.error('Failed to initialize JSON database; continuing with in-memory store only:', err);
+});
 
 // Routes
 app.post('/api/payments/verify', (req, res) => verifyPayment(req, res, db));
 app.post('/api/payments/store', (req, res) => storePayment(req, res, db));
 app.get('/api/payments/check/:txid', (req, res) => checkPayment(req, res, db));
 app.post('/api/proofs/verify', (req, res) => verifyProofRoute(req, res));
-app.post('/api/proofs/store', (req, res) => storeProof(req, res));
-app.get('/api/proofs/get/:proofHash', (req, res) => getProofByHash(req, res));
+app.post('/api/proofs/store', (req, res) => storeProof(req, res, db));
+app.get('/api/proofs/get/:proofHash', (req, res) => getProofByHash(req, res, db));
 
 // Credential routes
 app.post('/api/register-credential', (req, res) => registerCredential(req, res, db));

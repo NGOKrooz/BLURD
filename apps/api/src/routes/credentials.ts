@@ -5,7 +5,7 @@
  */
 
 import { Request, Response } from 'express';
-import { Database } from '../database-memory';
+import type { Database } from '../database';
 import { verifySignature } from '../utils/wallet';
 
 export interface CredentialRecord {
@@ -70,7 +70,7 @@ export async function registerCredential(
     }
 
     // Check if already registered
-    const existing = db.getCredentialByHash(unique_key_hash);
+    const existing = await db.getCredential(unique_key_hash);
     if (existing) {
       res.status(409).json({
         error: 'Credential with this unique_key_hash already registered',
@@ -87,7 +87,7 @@ export async function registerCredential(
       id: Date.now().toString() + Math.random().toString(36).substring(7),
     };
 
-    db.storeCredential(credential);
+    await db.saveCredential(credential);
 
     res.status(200).json({
       registered: true,
@@ -121,7 +121,7 @@ export async function checkUnique(
       return;
     }
 
-    const credential = db.getCredentialByHash(unique_key_hash);
+    const credential = await db.getCredential(unique_key_hash);
 
     if (credential) {
       res.status(200).json({

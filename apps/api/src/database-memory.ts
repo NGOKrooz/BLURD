@@ -1,98 +1,79 @@
 /**
- * In-memory database for demo purposes
- * Uses Map instead of SQLite to avoid native module compilation
+ * In-memory database implementation that matches the Database interface.
+ * Useful for local development or environments where file writes are not possible.
  */
 
-// PaymentRecord type definition
-export interface PaymentRecord {
-  txid: string;
-  amount: number;
-  proofHash: string;
-  timestamp: number;
-  confirmed: boolean;
-}
+import type {
+  Database,
+  CredentialRecord,
+  PaymentRecord,
+  ProofRecord,
+} from './database';
 
-// CredentialRecord type definition
-export interface CredentialRecord {
-  unique_key_hash: string;
-  issuedAt: string;
-  id: string;
-}
-
-export class Database {
+export class MemoryDatabase implements Database {
   private payments: Map<string, PaymentRecord> = new Map();
   private credentials: Map<string, CredentialRecord> = new Map();
+  private proofs: Map<string, ProofRecord> = new Map();
 
-  constructor() {
-    // No initialization needed for in-memory
+  async init(): Promise<void> {
+    console.log('Using in-memory database implementation');
   }
 
-  init() {
-    // Already initialized
-    console.log('Using in-memory database for demo');
+  // ---- Credentials ----
+
+  async saveCredential(data: any): Promise<void> {
+    const record: CredentialRecord = {
+      id: data.id,
+      unique_key_hash: data.unique_key_hash,
+      issuedAt: data.issuedAt,
+    };
+
+    this.credentials.set(record.unique_key_hash, record);
   }
 
-  /**
-   * Store a payment record
-   */
-  storePayment(payment: PaymentRecord) {
-    this.payments.set(payment.txid, payment);
+  async getCredential(id: string): Promise<any> {
+    // Treat `id` as unique_key_hash for compatibility with routes.
+    return this.credentials.get(id) ?? null;
   }
 
-  /**
-   * Get payment by transaction ID
-   */
-  getPaymentByTxId(txid: string): PaymentRecord | null {
-    return this.payments.get(txid) || null;
-  }
-
-  /**
-   * Get payment by proof hash
-   */
-  getPaymentByProofHash(proofHash: string): PaymentRecord | null {
-    for (const payment of this.payments.values()) {
-      if (payment.proofHash === proofHash) {
-        return payment;
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Update payment confirmation status
-   */
-  updateConfirmation(txid: string, confirmed: boolean) {
-    const payment = this.payments.get(txid);
-    if (payment) {
-      payment.confirmed = confirmed;
-      this.payments.set(txid, payment);
-    }
-  }
-
-  /**
-   * Store a credential record (only unique_key_hash + timestamp)
-   */
-  storeCredential(credential: CredentialRecord) {
-    this.credentials.set(credential.unique_key_hash, credential);
-  }
-
-  /**
-   * Get credential by unique_key_hash
-   */
-  getCredentialByHash(unique_key_hash: string): CredentialRecord | null {
-    return this.credentials.get(unique_key_hash) || null;
-  }
-
-  /**
-   * Get all credentials (for admin/debugging only)
-   */
-  getAllCredentials(): CredentialRecord[] {
+  async listCredentials(): Promise<any[]> {
     return Array.from(this.credentials.values());
   }
 
-  close() {
-    this.payments.clear();
-    this.credentials.clear();
+  // ---- Proofs ----
+
+  async saveProof(data: any): Promise<void> {
+    const record: ProofRecord = {
+      proofHash: data.proofHash,
+      proof: data.proof,
+      publicSignals: data.publicSignals,
+      timestamp: data.timestamp ?? Date.now(),
+    };
+
+    this.proofs.set(record.proofHash, record);
+  }
+
+  async listProofs(): Promise<any[]> {
+    return Array.from(this.proofs.values());
+  }
+
+  // ---- Payments ----
+
+  async savePayment(data: any): Promise<void> {
+    const record: PaymentRecord = {
+      txid: data.txid,
+      amount: data.amount,
+      proofHash: data.proofHash,
+      timestamp: data.timestamp ?? Date.now(),
+      confirmed: Boolean(data.confirmed),
+    };
+
+    this.payments.set(record.txid, record);
+  }
+
+  async listPayments(): Promise<any[]> {
+    return Array.from(this.payments.values());
   }
 }
+
 
