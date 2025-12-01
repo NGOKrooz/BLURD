@@ -16,6 +16,7 @@ import {
   type PrivacyPreservingPaymentProof,
   type ProofBinding,
 } from '@/lib/payment-proof';
+import { sendStarknetPayment } from '@/lib/starknet';
 
 export default function SendPayment() {
   const { address, isConnected } = useAccount();
@@ -97,6 +98,13 @@ export default function SendPayment() {
     setError(null);
 
     try {
+      // Send Starknet payment on testnet with optional proof hash binding
+      const txHash = await sendStarknetPayment({
+        recipient,
+        amount,
+        proofHash,
+      });
+
       // Create internal payment data (for local storage - PRIVATE)
       const internal = createInternalPaymentData({
         recipient,
@@ -104,6 +112,8 @@ export default function SendPayment() {
         proofType,
         proofHash,
       });
+      // Override simulated tx hash with real Starknet tx hash
+      (internal as any).txHash = txHash;
       setInternalData(internal);
 
       // Store internal data locally (for sender reference only)
@@ -115,19 +125,6 @@ export default function SendPayment() {
 
       // Store privacy-preserving proof
       storePaymentProof(proof);
-
-      // Also store in legacy payment format for compatibility (internal only)
-      const stored = localStorage.getItem('blurd_payments');
-      const payments = stored ? JSON.parse(stored) : [];
-      payments.push({
-        txid: internal.txHash,
-        toAddress: recipient,
-        amount: amountNum,
-        proofHash: proofHash || null,
-        timestamp: new Date().toISOString(),
-        confirmed: false,
-      });
-      localStorage.setItem('blurd_payments', JSON.stringify(payments));
 
       setSent(true);
     } catch (err: any) {
@@ -386,7 +383,7 @@ export default function SendPayment() {
             {/* Note */}
             <div className="bg-gray-500/10 border border-gray-500/20 rounded-lg p-4">
               <p className="text-xs text-gray-300">
-                <strong>Note:</strong> In MVP mode, Blurd simulates shielded Zcash-like payments locally.
+                <strong>Note:</strong> Payments are sent on Starknet testnet and can be verified on-chain.
               </p>
             </div>
           </div>

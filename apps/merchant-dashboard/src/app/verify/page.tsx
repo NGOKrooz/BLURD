@@ -220,7 +220,7 @@ export default function Verify() {
 
       {/* What Merchants See vs Don't See */}
       <div className="mb-6 bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 p-6">
-        <h2 className="text-lg font-semibold text-white mb-4">What You See vs. What You Don't</h2>
+        <h2 className="text-lg font-semibold text-white mb-4">What You See vs. What You Don&apos;t</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
             <div className="flex items-center space-x-2 mb-3">
@@ -245,7 +245,7 @@ export default function Verify() {
           <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
             <div className="flex items-center space-x-2 mb-3">
               <EyeOff className="h-5 w-5 text-red-400" />
-              <h3 className="text-sm font-semibold text-red-300">What You Don't See</h3>
+              <h3 className="text-sm font-semibold text-red-300">What You Don&apos;t See</h3>
             </div>
             <ul className="text-sm text-gray-300 space-y-2">
               <li className="flex items-center space-x-2">
