@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Upload, Shield, Key, Download, CheckCircle2, AlertCircle, User, Calendar, FileText, List, Plus, Eye, Trash2, RefreshCw, Globe, X, Info, XCircle } from 'lucide-react';
 import Link from 'next/link';
-import { useStarknet } from '@/providers/starknet-provider';
+import { useAccount } from 'wagmi';
 import WalletConnect from '@/components/WalletConnect';
 import { generateAgeProof, generateUniquenessProof, generateCountryProof, downloadProof, storeProof, loadStoredProofs, ProofResult } from '@/lib/zk/proof';
 import CredentialUpload from '@/components/CredentialUpload';
@@ -34,7 +34,7 @@ interface Credential {
 }
 
 export default function MyProofs() {
-  const { address, isConnected } = useStarknet();
+  const { address, isConnected } = useAccount();
   const [activeTab, setActiveTab] = useState<TabType>('issue');
   const [mounted, setMounted] = useState(false);
   

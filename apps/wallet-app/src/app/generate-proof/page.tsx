@@ -1,47 +1,80 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAccount } from 'wagmi';
 import Link from 'next/link';
-import { Key, CheckCircle2, Download, Shield } from 'lucide-react';
-import { clsx } from 'clsx';
+import { Key, CheckCircle2, Download, Shield, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
+import WalletConnect from '@/components/WalletConnect';
+import { generateProof } from '@/lib/zk/proof';
+
+type ClaimType = 'age18' | 'nationality' | 'student' | '';
 
 export default function GenerateProof() {
+  const { address, isConnected } = useAccount();
+  const [claimType, setClaimType] = useState<ClaimType>('');
+  const [selectedCredential, setSelectedCredential] = useState<string>('');
+  const [credentials, setCredentials] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [proofGenerated, setProofGenerated] = useState(false);
   const [proof, setProof] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Load credentials from localStorage
+    const stored = localStorage.getItem('blurd_credentials');
+    if (stored) {
+      try {
+        setCredentials(JSON.parse(stored));
+      } catch (e) {
+        console.error('Failed to load credentials:', e);
+      }
+    }
+  }, []);
 
   const handleGenerateProof = async () => {
+    if (!isConnected || !address) {
+      setError('Please connect your wallet first');
+      return;
+    }
+
+    if (!claimType) {
+      setError('Please select a claim type');
+      return;
+    }
+
     setLoading(true);
     setProofGenerated(false);
+    setError(null);
 
     try {
-      // TODO: Implement actual proof generation using snarkjs
-      // This is a placeholder - replace with actual Circom proof generation
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Get credential data if selected
+      let credentialData = null;
+      if (selectedCredential) {
+        credentialData = credentials.find((c: any) => c.id === selectedCredential);
+      }
 
-      const mockProof = {
-        proof: {
-          pi_a: ['0x1234...', '0x5678...'],
-          pi_b: [['0xabcd...', '0xef01...'], ['0x2345...', '0x6789...']],
-          pi_c: ['0x9876...', '0x5432...']
-        },
-        publicSignals: ['0x1111...'],
-        proofHash: '0x' + Array.from(crypto.getRandomValues(new Uint8Array(32)))
-          .map(b => b.toString(16).padStart(2, '0')).join(''),
-        generatedAt: new Date().toISOString()
-      };
-      
-      setProof(mockProof);
-      setProofGenerated(true);
+      // Generate proof using the ZK proof library
+      const proofResult = await generateProof({
+        circuitType: claimType,
+        walletAddress: address,
+        credentialData: credentialData?.extractedFields || {},
+      });
 
-      // Store proof in localStorage
+      // Store proof locally
       const stored = localStorage.getItem('blurd_proofs');
       const proofs = stored ? JSON.parse(stored) : [];
-      proofs.push(mockProof);
+      proofs.push({
+        ...proofResult,
+        claimType,
+        generatedAt: new Date().toISOString(),
+      });
       localStorage.setItem('blurd_proofs', JSON.stringify(proofs));
-    } catch (error: any) {
-      console.error('Proof generation error:', error);
-      alert('Failed to generate proof: ' + error.message);
+
+      setProof(proofResult);
+      setProofGenerated(true);
+    } catch (err: any) {
+      console.error('Proof generation error:', err);
+      setError(err.message || 'Failed to generate proof');
     } finally {
       setLoading(false);
     }
@@ -55,53 +88,97 @@ export default function GenerateProof() {
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `proof-${Date.now()}.json`;
+    link.download = `zk-proof-${claimType}-${Date.now()}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
 
+  if (!isConnected) {
+    return (
+      <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+        <div className="mb-6">
+          <Link href="/" className="inline-flex items-center text-sm text-gray-400 hover:text-white">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Link>
+        </div>
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-6 text-center">
+          <AlertCircle className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-white mb-2">Wallet Not Connected</h3>
+          <p className="text-sm text-gray-300 mb-4">
+            Please connect your wallet to generate proofs. Your wallet address will be used as your identity anchor.
+          </p>
+          <WalletConnect />
+        </div>
+      </div>
+    );
+  }
+
   if (proofGenerated && proof) {
     return (
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-white">Proof Generated</h1>
-          <p className="mt-1 text-sm text-gray-400">Your zero-knowledge proof is ready</p>
-            </div>
+      <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+        <div className="mb-6">
+          <Link href="/" className="inline-flex items-center text-sm text-gray-400 hover:text-white">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Link>
+        </div>
 
-        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-6 mb-6">
+        <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-6 sm:p-8">
           <div className="flex items-center space-x-3 mb-4">
             <CheckCircle2 className="h-6 w-6 text-green-400" />
-            <h2 className="text-lg font-semibold text-green-300">Proof Generated Successfully</h2>
+            <h1 className="text-2xl font-semibold text-green-300">Proof Generated Successfully</h1>
           </div>
-          <p className="text-sm text-green-200 mb-4">
-            Your zero-knowledge proof has been generated and is ready to share.
+          <p className="text-sm text-green-200 mb-6">
+            Your zero-knowledge proof has been generated and is ready to share. No sensitive information is revealed.
           </p>
-          <div className="bg-neutral-800/40 rounded-lg p-4 mb-4">
-            <p className="text-xs text-gray-400 mb-1">Proof Hash:</p>
-            <p className="text-xs text-blue-400 font-mono break-all">{proof.proofHash}</p>
+
+          <div className="bg-neutral-800/40 rounded-lg p-4 mb-6">
+            <div className="space-y-3">
+              <div className="flex justify-between py-2 border-b border-white/5">
+                <span className="text-xs text-gray-400">Claim Type</span>
+                <span className="text-xs text-white font-semibold capitalize">{claimType}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-white/5">
+                <span className="text-xs text-gray-400">Proof Hash</span>
+                <span className="text-xs text-blue-400 font-mono break-all">
+                  {proof.proofHash?.substring(0, 20)}...
+                </span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-xs text-gray-400">Status</span>
+                <span className="text-xs text-green-400 font-semibold">Valid</span>
+              </div>
+            </div>
           </div>
-          <div className="flex space-x-3">
-          <button
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
               onClick={handleDownload}
-              className="flex items-center space-x-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-          >
+              className="flex-1 flex items-center justify-center space-x-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+            >
               <Download className="h-4 w-4" />
               <span>Download Proof</span>
-          </button>
+            </button>
             <Link
               href="/verify"
-              className="flex items-center space-x-2 rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
+              className="flex-1 flex items-center justify-center space-x-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
             >
               <Key className="h-4 w-4" />
               <span>Verify Proof</span>
             </Link>
           </div>
-        </div>
 
-        <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Proof Details</h3>
-          <div className="bg-neutral-800/40 rounded-lg p-4 font-mono text-xs text-gray-300 overflow-x-auto">
-            <pre>{JSON.stringify(proof, null, 2).substring(0, 500)}...</pre>
+          <div className="mt-6 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+            <div className="flex items-start space-x-2">
+              <Shield className="h-5 w-5 text-blue-400 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-blue-300 mb-1">Privacy Protected</p>
+                <p className="text-xs text-blue-200">
+                  This proof verifies your claim without revealing any personal information. You can share it with any platform that needs verification.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -109,61 +186,108 @@ export default function GenerateProof() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-white">Generate Zero-Knowledge Proof</h1>
-        <p className="mt-1 text-sm text-gray-400">Create a privacy pass from your credentials</p>
+    <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+      <div className="mb-6">
+        <Link href="/" className="inline-flex items-center text-sm text-gray-400 hover:text-white">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Dashboard
+        </Link>
       </div>
 
-      <div className="bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-8">
-        <div className="mb-6">
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-            <p className="text-sm text-blue-300">
-              🔒 <strong>Privacy:</strong> Your proof is generated locally and never reveals your identity. 
-              Only a &apos;YES&apos; or &apos;NO&apos; is shared.
+      <div className="bg-neutral-900/40 backdrop-blur-md rounded-xl border border-white/10 shadow-sm p-6 sm:p-8">
+        <h1 className="text-2xl font-semibold text-white mb-2">Generate Zero-Knowledge Proof</h1>
+        <p className="text-sm text-gray-400 mb-6">
+          Create a privacy-preserving proof for your identity claims without revealing personal data.
+        </p>
+
+        {error && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-start space-x-3">
+            <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-300">{error}</p>
+          </div>
+        )}
+
+        <div className="space-y-6">
+          {/* Claim Type Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Select Claim to Prove
+            </label>
+            <select
+              value={claimType}
+              onChange={(e) => setClaimType(e.target.value as ClaimType)}
+              className="block w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+            >
+              <option value="">Select a claim type</option>
+              <option value="age18">Age ≥ 18</option>
+              <option value="nationality">Nationality</option>
+              <option value="student">Student Status</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-400">
+              Choose what you want to prove about yourself without revealing the actual value.
             </p>
           </div>
-        </div>
 
-        <div className="space-y-4 mb-6">
-          <p className="text-sm text-gray-300">
-            Select a credential to generate a zero-knowledge proof from. The proof will prove that you 
-            meet certain criteria (e.g., age &gt;= 18) without revealing your actual age or other personal information.
-          </p>
-            </div>
-
-              <button
-          onClick={handleGenerateProof}
-          disabled={loading}
-                className={clsx(
-            'w-full rounded-md px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors flex items-center justify-center space-x-2',
-            loading
-                    ? 'bg-gray-600 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                )}
+          {/* Credential Selection (Optional) */}
+          {credentials.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Select Credential (Optional)
+              </label>
+              <select
+                value={selectedCredential}
+                onChange={(e) => setSelectedCredential(e.target.value)}
+                className="block w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               >
-          {loading ? (
-            <>
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
-              <span>Generating Proof...</span>
-            </>
-          ) : (
-            <>
-              <Shield className="h-4 w-4" />
-              <span>Generate Proof</span>
-            </>
+                <option value="">None (manual input)</option>
+                {credentials.map((cred: any) => (
+                  <option key={cred.id} value={cred.id}>
+                    {cred.documentType} - {new Date(cred.uploadedAt).toLocaleDateString()}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-400">
+                Use a previously uploaded credential or enter data manually.
+              </p>
+            </div>
           )}
-        </button>
 
-        <div className="mt-6 pt-6 border-t border-white/10">
-          <h3 className="text-sm font-semibold text-white mb-3">How It Works</h3>
-          <ul className="text-sm text-gray-300 space-y-2 list-disc list-inside">
-            <li>Select a credential from your stored privacy passes</li>
-            <li>Choose what attribute you want to prove (e.g., age verification)</li>
-            <li>The proof is generated locally on your device</li>
-            <li>Only the proof (not your personal data) is shared</li>
-            <li>Verifiers can confirm the proof is valid without learning your identity</li>
-          </ul>
+          {/* Generate Button */}
+          <button
+            onClick={handleGenerateProof}
+            disabled={loading || !claimType}
+            className={`w-full rounded-lg px-6 py-3 text-sm font-semibold text-white transition-all flex items-center justify-center space-x-2 ${
+              loading || !claimType
+                ? 'bg-gray-600 cursor-not-allowed opacity-60'
+                : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500'
+            }`}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Generating Proof...</span>
+              </>
+            ) : (
+              <>
+                <Key className="h-4 w-4" />
+                <span>Generate Proof</span>
+              </>
+            )}
+          </button>
+
+          {/* Privacy Notice */}
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+            <div className="flex items-start space-x-2">
+              <Shield className="h-5 w-5 text-blue-400 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-blue-300 mb-1">Zero-Knowledge Proof</p>
+                <p className="text-xs text-blue-200">
+                  The proof generation happens entirely in your browser. Your personal data never leaves your device.
+                  The generated proof can verify your claim without revealing any sensitive information.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

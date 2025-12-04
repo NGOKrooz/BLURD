@@ -9,8 +9,9 @@ import {
   FileText,
   List,
   Shield,
-  Send,
-  History
+  Upload,
+  CheckCircle2,
+  User
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -28,11 +29,11 @@ interface SidebarProps {
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { type: 'divider' },
+  { name: 'Upload Credential', href: '/credentials/upload', icon: Upload },
+  { name: 'Generate Proof', href: '/generate-proof', icon: Key },
   { name: 'My Proofs', href: '/my-proofs', icon: Shield },
   { type: 'divider' },
-  { name: 'Payments', href: '/payments', icon: Send },
-  { type: 'divider' },
-  { name: 'History', href: '/history', icon: History },
+  { name: 'Verify Proof', href: '/verify', icon: CheckCircle2 },
   { type: 'divider' },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];

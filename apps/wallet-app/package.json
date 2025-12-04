@@ -10,9 +10,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@rainbow-me/rainbowkit": "^2.0.0",
     "@tanstack/react-query": "^5.17.0",
-    "@walletconnect/ethereum-provider": "^2.14.0",
-    "@walletconnect/modal": "^2.6.2",
     "circomlibjs": "^0.1.7",
     "clsx": "^2.0.0",
     "copy-to-clipboard": "^3.3.3",

@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { Copy, Check, Settings as SettingsIcon } from 'lucide-react';
-import { useStarknet } from '@/providers/starknet-provider';
+import { useAccount } from 'wagmi';
 import WalletConnect from '@/components/WalletConnect';
 
 export default function Settings() {
-  const { address, isConnected } = useStarknet();
+  const { address, isConnected } = useAccount();
   const [copied, setCopied] = useState<string | null>(null);
 
   const copyToClipboard = (text: string, type: string) => {

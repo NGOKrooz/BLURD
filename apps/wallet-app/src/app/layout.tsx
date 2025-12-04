@@ -2,14 +2,14 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Layout from '@/components/Layout'
-import { EthereumProvider } from '@/providers/ethereum-provider'
+import { WalletProvider } from '@/providers/wallet-provider'
 import { ErrorSuppressor } from '@/components/ErrorSuppressor'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Blurd - Privacy-Preserving ZK Credentials',
-  description: 'Zero-knowledge credential issuance and verification platform',
+  title: 'BLURD - zk-Passport: Privacy-Preserving Cryptoidentity',
+  description: 'Generate and verify zero-knowledge identity proofs using your EVM wallet as your cryptoidentity handle',
 }
 
 export default function RootLayout({
@@ -21,9 +21,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <ErrorSuppressor>
-          <EthereumProvider>
+          <WalletProvider>
             <Layout>{children}</Layout>
-          </EthereumProvider>
+          </WalletProvider>
         </ErrorSuppressor>
       </body>
     </html>
