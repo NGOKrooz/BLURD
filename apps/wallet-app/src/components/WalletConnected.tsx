@@ -1,63 +1,35 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Wallet, Copy, CheckCircle2, ExternalLink } from 'lucide-react';
 import { useStarknet } from '@/providers/starknet-provider';
-import { getStarknetBalance } from '@/lib/starknet';
+import { useStrkBalance } from '@/hooks/useStrkBalance';
 
 /**
  * Wallet Connected Screen Component
- * Displays wallet address, STR balance, and connection status
+ * Displays wallet address, STRK balance, and connection status
  * Integrates with Starknet wallet detection (Braavos/Argent X)
  */
 export default function WalletConnected() {
-  const { address, isConnected, connect, disconnect } = useStarknet();
-  const [balance, setBalance] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { address, isConnected, connect, disconnect, isCorrectNetwork, networkError } = useStarknet();
+  const { balance, loading: balanceLoading, error: balanceError } = useStrkBalance(address);
   const [copied, setCopied] = useState(false);
-
-  // Fetch balance when address changes
-  useEffect(() => {
-    if (isConnected && address) {
-      fetchBalance();
-    } else {
-      setBalance(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected, address]);
-
-  const fetchBalance = async () => {
-    if (!address) return;
-    
-    try {
-      setLoading(true);
-      const bal = await getStarknetBalance(address);
-      // Convert from wei-like units to STR (18 decimals)
-      const balanceStr = (Number(bal) / 1e18).toFixed(4);
-      setBalance(balanceStr);
-    } catch (err) {
-      console.error('Failed to fetch balance:', err);
-      setBalance('0.0000'); // Fallback for demo
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [connecting, setConnecting] = useState(false);
 
   const handleConnect = async () => {
     try {
-      setLoading(true);
+      setConnecting(true);
       await connect();
-      // Balance will be fetched automatically via useEffect
+      // Balance will be fetched automatically via useStrkBalance hook
     } catch (err: any) {
       console.error('Connection failed:', err);
     } finally {
-      setLoading(false);
+      setConnecting(false);
     }
   };
 
   const handleDisconnect = () => {
     disconnect();
-    setBalance(null);
   };
 
   const handleCopy = () => {
@@ -73,12 +45,12 @@ export default function WalletConnected() {
     return `${addr.substring(0, 6)}…${addr.substring(addr.length - 4)}`;
   };
 
-  if (loading && !isConnected) {
+  if (connecting && !isConnected) {
     return (
       <div className="bg-gradient-to-br from-neutral-900/90 via-neutral-800/90 to-neutral-900/90 backdrop-blur-md rounded-xl border border-white/10 p-6 sm:p-8 shadow-xl">
         <div className="flex items-center justify-center space-x-3">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
-          <p className="text-sm text-gray-400">Checking wallet connection...</p>
+          <p className="text-sm text-gray-400">Connecting wallet...</p>
         </div>
       </div>
     );
@@ -116,8 +88,10 @@ export default function WalletConnected() {
       {/* Status Badge */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-2">
-          <div className="flex h-3 w-3 rounded-full bg-green-400 animate-pulse"></div>
-          <span className="text-sm font-medium text-green-400">Wallet Connected</span>
+          <div className={`flex h-3 w-3 rounded-full ${isCorrectNetwork ? 'bg-green-400' : 'bg-red-400'} animate-pulse`}></div>
+          <span className={`text-sm font-medium ${isCorrectNetwork ? 'text-green-400' : 'text-red-400'}`}>
+            {isCorrectNetwork ? 'Connected to Sepolia' : 'Wrong Network'}
+          </span>
         </div>
         <button
           onClick={handleDisconnect}
@@ -126,6 +100,15 @@ export default function WalletConnected() {
           Disconnect
         </button>
       </div>
+
+      {/* Network Error Banner */}
+      {!isCorrectNetwork && (
+        <div className="mb-6 bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+          <p className="text-sm text-red-300">
+            {networkError || 'Please switch your wallet to Starknet Sepolia network.'}
+          </p>
+        </div>
+      )}
 
       {/* Wallet Address */}
       <div className="mb-6">
@@ -154,20 +137,28 @@ export default function WalletConnected() {
         </div>
       </div>
 
-      {/* STR Balance */}
+      {/* STRK Balance */}
       <div className="mb-6">
         <label className="block text-xs font-medium text-gray-400 mb-2">Balance</label>
         <div className="flex items-center space-x-3 bg-neutral-800/50 rounded-lg p-4 border border-white/5">
           <div className="flex-shrink-0">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20">
-              <span className="text-lg font-bold text-green-400">STR</span>
+              <span className="text-lg font-bold text-green-400">STRK</span>
             </div>
           </div>
           <div className="flex-1">
             <p className="text-2xl font-bold text-white">
-              {loading ? '...' : (balance || '0.0000')}
+              {balanceLoading ? (
+                <span className="text-gray-400">Fetching balance…</span>
+              ) : balanceError ? (
+                <span className="text-red-400 text-sm">Unable to fetch balance</span>
+              ) : (
+                balance || '0.0000'
+              )}
             </p>
-            <p className="text-xs text-gray-500 mt-1">Starknet Testnet</p>
+            <p className="text-xs text-gray-500 mt-1">
+              {balanceError ? 'Check RPC connection' : 'Starknet Sepolia'}
+            </p>
           </div>
         </div>
       </div>

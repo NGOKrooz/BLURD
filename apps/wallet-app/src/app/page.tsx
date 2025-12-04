@@ -2,11 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Shield, Key, CheckCircle2, Clock, Fingerprint, Lock, Wallet } from 'lucide-react';
+import { ArrowRight, Shield, Key, CheckCircle2, Clock, Fingerprint, Lock, Wallet, ExternalLink, Zap } from 'lucide-react';
 import { useStarknet } from '@/providers/starknet-provider';
-import { getStarknetBalance } from '@/lib/starknet';
+import { useStrkBalance } from '@/hooks/useStrkBalance';
 import { loadStoredProofs } from '@/lib/zk/proof';
 import WalletConnect from '@/components/WalletConnect';
+import PrivacyTooltip from '@/components/PrivacyTooltip';
+
+// Contract address for StarkScan link
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_PRIVATE_PAYMENT_CONTRACT_ADDRESS || '';
 
 interface CredentialStat {
   totalIssued: number;
@@ -18,8 +22,8 @@ interface CredentialStat {
 }
 
 export default function Dashboard() {
-  const { address, isConnected } = useStarknet();
-  const [balance, setBalance] = useState<string | null>(null);
+  const { address, isConnected, isCorrectNetwork, networkError } = useStarknet();
+  const { balance, loading: balanceLoading, error: balanceError } = useStrkBalance(address);
   const [mounted, setMounted] = useState(false);
   const [stats, setStats] = useState<CredentialStat>({
     totalIssued: 0,
@@ -33,20 +37,6 @@ export default function Dashboard() {
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Fetch STR balance when connected
-  useEffect(() => {
-    if (isConnected && address) {
-      getStarknetBalance(address).then((bal) => {
-        const balanceStr = (Number(bal) / 1e18).toFixed(4);
-        setBalance(balanceStr);
-      }).catch(() => {
-        setBalance('0.0000');
-      });
-    } else {
-      setBalance(null);
-    }
-  }, [isConnected, address]);
 
   useEffect(() => {
     // Load credential stats from localStorage
@@ -189,24 +179,83 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Network Error Banner */}
+      {isConnected && !isCorrectNetwork && (
+        <div className="mb-6 sm:mb-8 bg-red-500/10 border border-red-500/30 rounded-lg p-4 sm:p-6">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-red-300">Wrong Network</h3>
+              <p className="text-xs text-red-200 mt-1">
+                {networkError || 'Please switch your wallet to Starknet Sepolia network.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Wallet Balance */}
       {isConnected && address && (
-        <div className="mb-6 sm:mb-8 bg-neutral-900/40 backdrop-blur-md rounded-lg border border-white/10 p-4 sm:p-6 shadow-sm">
+        <div className="mb-6 sm:mb-8 bg-gradient-to-r from-neutral-900/60 to-neutral-800/60 backdrop-blur-md rounded-xl border border-white/10 p-4 sm:p-6 shadow-lg">
           <div className="flex items-center min-w-0">
             <div className="flex-shrink-0">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20">
-                <Wallet className="h-5 w-5 text-green-400" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30">
+                <Wallet className="h-6 w-6 text-green-400" />
               </div>
             </div>
-            <div className="ml-3 sm:ml-4 flex-1 min-w-0">
-              <p className="text-xs sm:text-sm font-medium text-gray-400">Wallet Address</p>
-              <p className="text-xs sm:text-sm font-mono text-white break-all">{address}</p>
-              {balance && (
-                <p className="text-xs text-gray-400 mt-1">
-                  Balance: {balance} STR
-                </p>
-              )}
+            <div className="ml-4 flex-1 min-w-0">
+              <div className="flex items-center space-x-2 mb-1">
+                <p className="text-xs font-medium text-gray-400">Connected Wallet</p>
+                <span className="flex h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
+              </div>
+              <p className="text-sm font-mono text-white truncate">{address}</p>
+              <div className="flex items-center mt-2">
+                {balanceLoading ? (
+                  <p className="text-sm text-gray-400">Fetching balance…</p>
+                ) : balanceError ? (
+                  <p className="text-sm text-red-400">{balanceError}</p>
+                ) : (
+                  <p className="text-lg font-bold text-white">
+                    {balance || '0.0000'} <span className="text-sm text-gray-400">STRK</span>
+                  </p>
+                )}
+              </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contract Info Banner */}
+      {CONTRACT_ADDRESS && (
+        <div className="mb-6 sm:mb-8 bg-gradient-to-r from-purple-500/10 to-blue-500/10 backdrop-blur-md rounded-xl border border-purple-500/20 p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center space-x-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20 border border-purple-500/30">
+                <Zap className="h-5 w-5 text-purple-400" />
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <p className="text-sm font-semibold text-white">Privacy Payment Contract</p>
+                  <PrivacyTooltip type="privacy" iconSize="sm" position="top" />
+                </div>
+                <p className="text-xs text-gray-400 font-mono truncate max-w-[200px] sm:max-w-none">
+                  {CONTRACT_ADDRESS}
+                </p>
+              </div>
+            </div>
+            <a
+              href={`https://sepolia.starkscan.co/contract/${CONTRACT_ADDRESS}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-sm font-medium text-purple-300 hover:text-purple-200 transition-all"
+            >
+              <span>View on StarkScan</span>
+              <ExternalLink className="h-4 w-4" />
+            </a>
           </div>
         </div>
       )}

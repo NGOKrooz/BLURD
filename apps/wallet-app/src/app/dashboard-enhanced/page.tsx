@@ -10,7 +10,7 @@ import { useStarknet } from '@/providers/starknet-provider';
 /**
  * Enhanced Dashboard - Starknet-native, Privacy-first
  * Features:
- * - Wallet connection status with STR balance
+ * - Wallet connection status with STRK balance
  * - Overview cards for proofs and payments
  * - Quick actions navigation
  * - Clean, hackathon-ready design

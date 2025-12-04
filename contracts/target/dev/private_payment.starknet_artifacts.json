@@ -1,0 +1,1 @@
+{"version":1,"contracts":[{"id":"iamuaicebjcuc","package_name":"private_payment","contract_name":"PrivatePayment","module_path":"private_payment::PrivatePayment","artifacts":{"sierra":"private_payment_PrivatePayment.contract_class.json","casm":"private_payment_PrivatePayment.compiled_contract_class.json"}}]}

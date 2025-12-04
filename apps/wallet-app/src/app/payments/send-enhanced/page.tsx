@@ -18,6 +18,14 @@ import { sendStarknetPayment } from '@/lib/starknet';
 import { useStarknet } from '@/providers/starknet-provider';
 import TransactionLoading from '@/components/TransactionLoading';
 import ZKProofAttached from '@/components/ZKProofAttached';
+import PaymentSuccessModal from '@/components/PaymentSuccessModal';
+import {
+  createPaymentProofFile,
+  downloadPaymentProofFile,
+  storePaymentProofFileRef,
+  type PaymentProofFile,
+} from '@/utils/proofFile';
+import { generateNonce, generateCommitment } from '@/utils/privacy';
 
 /**
  * Enhanced Send Payment Screen with Starknet Integration
@@ -45,6 +53,11 @@ export default function SendPaymentEnhanced() {
   const [paymentProof, setPaymentProof] = useState<PrivacyPreservingPaymentProof | null>(null);
   const [internalData, setInternalData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Modal and proof file state
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [proofFile, setProofFile] = useState<PaymentProofFile | null>(null);
+  const [currentCommitment, setCurrentCommitment] = useState<string | null>(null);
 
   // Load available proofs on mount
   useEffect(() => {
@@ -125,15 +138,23 @@ export default function SendPaymentEnhanced() {
       setTimeout(() => {
         setTxStatus('confirmed');
         
+        // Generate commitment for proof file
+        const nonce = generateNonce();
+        const amountWei = BigInt(Math.floor(amountNum * 1e18)).toString();
+        const commitment = generateCommitment(address, recipient, amountWei, nonce);
+        setCurrentCommitment(commitment);
+
         // Create internal payment data
         const internal = createInternalPaymentData({
           recipient,
           amount: amountNum.toString(),
           proofType,
-          proofHash,
+          proofHash: commitment,
         });
         // Override with real tx hash
         internal.txHash = hash;
+        (internal as any).commitment = commitment;
+        (internal as any).nonce = nonce;
         setInternalData(internal);
         storeInternalPaymentData(internal);
 
@@ -142,8 +163,19 @@ export default function SendPaymentEnhanced() {
         setPaymentProof(proof);
         storePaymentProof(proof);
 
+        // Generate Payment Proof File (identity proof + commitment + nonce)
+        const paymentProofFile = createPaymentProofFile(commitment, nonce, proofType);
+        setProofFile(paymentProofFile);
+        storePaymentProofFileRef(paymentProofFile);
+
+        // Auto-download proof file
+        downloadPaymentProofFile(paymentProofFile);
+
         setSent(true);
         setSending(false);
+
+        // Show success modal
+        setShowSuccessModal(true);
       }, 3000);
     } catch (err: any) {
       console.error('Payment failed:', err);
@@ -154,9 +186,15 @@ export default function SendPaymentEnhanced() {
   };
 
   const handleDownload = () => {
-    if (paymentProof) {
+    if (proofFile) {
+      downloadPaymentProofFile(proofFile);
+    } else if (paymentProof) {
       downloadPaymentProof(paymentProof);
     }
+  };
+
+  const handleCloseModal = () => {
+    setShowSuccessModal(false);
   };
 
   const handleReset = () => {
@@ -177,16 +215,27 @@ export default function SendPaymentEnhanced() {
   const uniquenessProofs = availableProofs.filter((p) => p.circuitType === 'uniqueness');
 
   return (
-    <div className="w-full max-w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 overflow-x-hidden">
-      <div className="mb-4 sm:mb-6">
-        <Link
-          href="/payments"
-          className="inline-flex items-center text-xs sm:text-sm text-gray-400 hover:text-white transition-colors touch-manipulation min-h-[44px]"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2 flex-shrink-0" />
-          <span>Back to Payments</span>
-        </Link>
-      </div>
+    <>
+      {/* Success Modal */}
+      <PaymentSuccessModal
+        isOpen={showSuccessModal}
+        onClose={handleCloseModal}
+        onDownload={handleDownload}
+        txHash={txHash || undefined}
+        commitment={currentCommitment || undefined}
+        autoCloseDelay={15000}
+      />
+
+      <div className="w-full max-w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 overflow-x-hidden">
+        <div className="mb-4 sm:mb-6">
+          <Link
+            href="/payments"
+            className="inline-flex items-center text-xs sm:text-sm text-gray-400 hover:text-white transition-colors touch-manipulation min-h-[44px]"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2 flex-shrink-0" />
+            <span>Back to Payments</span>
+          </Link>
+        </div>
 
       <div className="bg-gradient-to-br from-neutral-900/90 via-neutral-800/90 to-neutral-900/90 backdrop-blur-md rounded-lg border border-white/10 shadow-sm p-4 sm:p-6 lg:p-8 overflow-x-hidden">
         <h1 className="text-xl sm:text-2xl font-semibold text-white mb-2">Send Private Payment</h1>
@@ -242,7 +291,7 @@ export default function SendPaymentEnhanced() {
               </div>
               <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-400">Amount:</p>
-                <p className="text-xs text-white font-semibold">{internalData.amount} STR</p>
+                <p className="text-xs text-white font-semibold">{internalData.amount} STRK</p>
               </div>
               <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-400">Transaction Hash:</p>
@@ -405,6 +454,7 @@ export default function SendPaymentEnhanced() {
         )}
       </div>
     </div>
+    </>
   );
 }
 

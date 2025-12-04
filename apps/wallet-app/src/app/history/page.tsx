@@ -155,7 +155,7 @@ export default function PaymentHistory() {
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-xs text-gray-400 flex-shrink-0">Amount:</p>
-                        <p className="text-xs text-white font-semibold break-words">{activity.payment.amount} STR</p>
+                        <p className="text-xs text-white font-semibold break-words">{activity.payment.amount} STRK</p>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-xs text-gray-400 flex-shrink-0">TX ID:</p>
