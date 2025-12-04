@@ -10,6 +10,6 @@ export default function WalletConnect() {
   return (
     <div className="flex items-center">
       <ConnectButton showBalance={false} chainStatus="icon" />
-    </div>
+      </div>
   );
 }

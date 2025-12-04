@@ -15,16 +15,16 @@ interface StatsCardProps {
  */
 export default function StatsCard({ label, value, icon }: StatsCardProps) {
   return (
-    <div className="bg-neutral-900/60 backdrop-blur-md rounded-xl border border-white/10 p-4 sm:p-5 shadow-sm">
-      <div className="flex items-center gap-3">
+    <div className="bg-neutral-900/60 backdrop-blur-md rounded-xl border border-white/10 p-3 sm:p-4 lg:p-5 shadow-sm">
+      <div className="flex items-center gap-2 sm:gap-3">
         {icon && (
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/15 text-blue-300">
+          <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-blue-500/15 text-blue-300 flex-shrink-0">
             {icon}
           </div>
         )}
-        <div>
-          <p className="text-xs sm:text-sm font-medium text-gray-400">{label}</p>
-          <p className="mt-1 text-xl sm:text-2xl font-semibold text-white tabular-nums">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs sm:text-sm font-medium text-gray-400 truncate">{label}</p>
+          <p className="mt-0.5 sm:mt-1 text-lg sm:text-xl lg:text-2xl font-semibold text-white tabular-nums">
             {value}
           </p>
         </div>

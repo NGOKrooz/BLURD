@@ -130,9 +130,9 @@ export default function Verify() {
     (inputMode === 'hash' && !proofHash.trim());
 
   return (
-    <div className="space-y-6 sm:space-y-8 max-w-3xl">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8 max-w-3xl pt-12 lg:pt-0">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-semibold text-white">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-white">
           Identity Proof Verification
         </h1>
         <p className="mt-1 text-xs sm:text-sm text-gray-400">
@@ -140,38 +140,38 @@ export default function Verify() {
         </p>
       </div>
 
-      <div className="bg-neutral-950/70 backdrop-blur-xl rounded-2xl border border-white/10 shadow-lg p-5 sm:p-6 space-y-6">
+      <div className="bg-neutral-950/70 backdrop-blur-xl rounded-xl sm:rounded-2xl border border-white/10 shadow-lg p-4 sm:p-5 lg:p-6 space-y-4 sm:space-y-6">
         {/* Input mode selector */}
         <div>
           <p className="text-xs sm:text-sm font-medium text-gray-300 mb-3">
             Proof Source
           </p>
-          <div className="inline-grid grid-cols-2 gap-2 rounded-xl bg-neutral-900/80 border border-white/10 p-1">
+          <div className="grid grid-cols-2 gap-2 rounded-xl bg-neutral-900/80 border border-white/10 p-1">
             <button
               type="button"
               onClick={() => setInputMode('file')}
               className={clsx(
-                'inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition-colors',
+                'inline-flex items-center justify-center gap-1.5 sm:gap-2 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium transition-colors',
                 inputMode === 'file'
                   ? 'bg-white text-neutral-900'
                   : 'text-gray-300 hover:bg-white/5'
               )}
             >
-              <FileJson className="h-4 w-4" />
-              <span>Proof JSON Upload</span>
+              <FileJson className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="truncate">Proof JSON</span>
             </button>
             <button
               type="button"
               onClick={() => setInputMode('hash')}
               className={clsx(
-                'inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition-colors',
+                'inline-flex items-center justify-center gap-1.5 sm:gap-2 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium transition-colors',
                 inputMode === 'hash'
                   ? 'bg-white text-neutral-900'
                   : 'text-gray-300 hover:bg-white/5'
               )}
             >
-              <Hash className="h-4 w-4" />
-              <span>Proof Hash Lookup</span>
+              <Hash className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="truncate">Proof Hash</span>
             </button>
           </div>
         </div>
@@ -182,9 +182,9 @@ export default function Verify() {
             <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
               Proof JSON
             </label>
-            <div className="mt-1 flex justify-center rounded-xl border border-dashed border-white/20 bg-neutral-900/60 px-6 py-8">
-              <div className="text-center space-y-3">
-                <Upload className="mx-auto h-10 w-10 text-gray-400" />
+            <div className="mt-1 flex justify-center rounded-xl border border-dashed border-white/20 bg-neutral-900/60 px-4 sm:px-6 py-6 sm:py-8">
+              <div className="text-center space-y-2 sm:space-y-3 w-full">
+                <Upload className="mx-auto h-8 w-8 sm:h-10 sm:w-10 text-gray-400" />
                 <div className="flex flex-col items-center gap-2 text-xs sm:text-sm text-gray-300">
                   <label className="relative cursor-pointer rounded-md font-semibold text-blue-400 hover:text-blue-300">
                     <span>Upload proof.json</span>
@@ -197,11 +197,11 @@ export default function Verify() {
                       }
                     />
                   </label>
-                  <p className="text-[11px] text-gray-500">
+                  <p className="text-[10px] sm:text-[11px] text-gray-500 px-2">
                     JSON only, up to 1MB. No personal data required.
                   </p>
                   {proofFile && (
-                    <p className="text-[11px] text-gray-300 truncate max-w-xs">
+                    <p className="text-[10px] sm:text-[11px] text-gray-300 truncate max-w-full px-2">
                       {proofFile.name}
                     </p>
                   )}
@@ -234,19 +234,19 @@ export default function Verify() {
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between pt-1">
+        <div className="flex flex-col sm:flex-row gap-3 pt-1">
           <button
             type="button"
             onClick={handleVerify}
             disabled={isRunDisabled}
-            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
+            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors w-full sm:w-auto sm:flex-1"
           >
             {loading ? 'Running verification…' : 'Run Verification'}
           </button>
           <button
             type="button"
             onClick={resetForm}
-            className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs sm:text-sm font-medium text-gray-200 hover:bg-white/10 transition-colors w-full sm:w-auto"
+            className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-xs sm:text-sm font-medium text-gray-200 hover:bg-white/10 transition-colors w-full sm:w-auto"
           >
             Clear
           </button>

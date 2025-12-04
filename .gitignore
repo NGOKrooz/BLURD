@@ -49,3 +49,9 @@ keys/
 *.swp
 *.swo
 
+# Media files
+*.mp4
+*.mov
+*.avi
+*.mkv
+

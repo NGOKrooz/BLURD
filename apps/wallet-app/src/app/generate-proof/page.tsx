@@ -156,7 +156,7 @@ export default function GenerateProof() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
           </Link>
-        </div>
+            </div>
 
         <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-6 sm:p-8">
           <div className="flex items-center space-x-3 mb-4">
@@ -194,13 +194,13 @@ export default function GenerateProof() {
               <Shield className="h-4 w-4" />
               <span>View Proof</span>
             </Link>
-            <button
+          <button
               onClick={handleDownload}
               className="flex-1 flex items-center justify-center space-x-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
-            >
+          >
               <Download className="h-4 w-4" />
               <span>Download Proof</span>
-            </button>
+          </button>
           </div>
 
           <div className="mt-6 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
@@ -211,8 +211,8 @@ export default function GenerateProof() {
                 <p className="text-xs text-blue-200">
                   This proof verifies your claim without revealing any personal information. You can share it with any platform that needs verification.
                 </p>
-              </div>
-            </div>
+          </div>
+        </div>
           </div>
         </div>
       </div>
@@ -258,8 +258,8 @@ export default function GenerateProof() {
             </select>
             <p className="mt-1 text-xs text-gray-400">
               Choose what you want to prove about yourself without revealing the actual value.
-            </p>
-          </div>
+          </p>
+            </div>
 
           {/* Credential Selection (Required) */}
           {credentials.length === 0 ? (
@@ -293,27 +293,27 @@ export default function GenerateProof() {
           )}
 
           {/* Generate Button */}
-          <button
-            onClick={handleGenerateProof}
+              <button
+          onClick={handleGenerateProof}
             disabled={loading || !claimType || !selectedCredential || credentials.length === 0}
             className={`w-full rounded-lg px-6 py-3 text-sm font-semibold text-white transition-all flex items-center justify-center space-x-2 ${
               loading || !claimType || !selectedCredential || credentials.length === 0
                 ? 'bg-gray-600 cursor-not-allowed opacity-60'
                 : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500'
             }`}
-          >
-            {loading ? (
-              <>
+              >
+          {loading ? (
+            <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Generating Proof...</span>
-              </>
-            ) : (
-              <>
+              <span>Generating Proof...</span>
+            </>
+          ) : (
+            <>
                 <Key className="h-4 w-4" />
-                <span>Generate Proof</span>
-              </>
-            )}
-          </button>
+              <span>Generate Proof</span>
+            </>
+          )}
+        </button>
 
           {/* Privacy Notice */}
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">

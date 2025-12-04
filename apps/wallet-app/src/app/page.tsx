@@ -37,14 +37,14 @@ export default function Dashboard() {
       <div className="mb-8 sm:mb-10 text-center">
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight mb-3">
           Prove Anything. <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Reveal Nothing.</span>
-        </h1>
+            </h1>
         <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-300">
           <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1">
-            Identity Proofs
-          </span>
+                Identity Proofs
+              </span>
           <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1">
-            Reusable ZK Credentials
-          </span>
+                Reusable ZK Credentials
+              </span>
         </div>
       </div>
 
@@ -99,7 +99,7 @@ export default function Dashboard() {
                 <Upload className="h-5 w-5 text-blue-400" />
               </div>
               <h3 className="text-lg font-semibold text-white">Upload Credential</h3>
-            </div>
+                </div>
             <p className="text-sm text-gray-300 mb-4">
               Upload an ID document and extract necessary fields privately.
             </p>
@@ -126,7 +126,7 @@ export default function Dashboard() {
             <div className="flex items-center text-purple-400 group-hover:text-purple-300">
               <span className="text-sm font-medium">Generate</span>
               <ArrowRight className="h-4 w-4 ml-2" />
-            </div>
+          </div>
           </Link>
         </div>
       )}

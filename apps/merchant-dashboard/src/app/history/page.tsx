@@ -32,17 +32,17 @@ export default function History() {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8 max-w-6xl">
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8 max-w-6xl pt-12 lg:pt-0">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="flex-1 min-w-0">
           <Link
             href="/"
-            className="inline-flex items-center text-sm text-gray-400 hover:text-white mb-4"
+            className="inline-flex items-center text-xs sm:text-sm text-gray-400 hover:text-white mb-3 sm:mb-4"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
+            <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
+            <span>Back to Dashboard</span>
           </Link>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-white">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-white">
             Verification History
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-gray-400">
@@ -52,57 +52,58 @@ export default function History() {
         {history.length > 0 && (
           <button
             onClick={handleClearHistory}
-            className="inline-flex items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 hover:bg-red-500/20 transition-colors"
+            className="inline-flex items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-red-400 hover:bg-red-500/20 transition-colors self-start sm:self-auto"
           >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Clear History
+            <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
+            <span className="hidden sm:inline">Clear History</span>
+            <span className="sm:hidden">Clear</span>
           </button>
         )}
       </div>
 
       {history.length === 0 ? (
-        <div className="bg-neutral-950/70 backdrop-blur-xl rounded-2xl border border-white/10 shadow-lg p-12 text-center">
-          <CheckCircle2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">No Verifications Yet</h3>
-          <p className="text-sm text-gray-400 mb-6">
+        <div className="bg-neutral-950/70 backdrop-blur-xl rounded-xl sm:rounded-2xl border border-white/10 shadow-lg p-8 sm:p-12 text-center">
+          <CheckCircle2 className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-base sm:text-lg font-semibold text-white mb-2">No Verifications Yet</h3>
+          <p className="text-xs sm:text-sm text-gray-400 mb-6">
             Start verifying identity proofs to see them appear here.
           </p>
           <Link
             href="/verify"
-            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
           >
             Start Verification
           </Link>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {history.map((record) => (
             <div
               key={record.id}
               className={clsx(
-                'bg-neutral-950/70 backdrop-blur-xl rounded-2xl border p-5 sm:p-6',
+                'bg-neutral-950/70 backdrop-blur-xl rounded-xl sm:rounded-2xl border p-4 sm:p-5 lg:p-6',
                 record.result.verified
                   ? 'border-emerald-500/40 bg-emerald-900/10'
                   : 'border-red-500/40 bg-red-900/10'
               )}
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3 sm:gap-4">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-3">
+                  <div className="flex items-start gap-2 sm:gap-3 mb-3">
                     {record.result.verified ? (
-                      <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                      <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-400 flex-shrink-0 mt-0.5" />
                     ) : (
-                      <XCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
+                      <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-400 flex-shrink-0 mt-0.5" />
                     )}
-                    <div>
-                      <h3 className="text-base sm:text-lg font-semibold text-white capitalize">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-white capitalize">
                         {record.proofType === 'age18' ? 'Age Verification' : 
                          record.proofType === 'country' ? 'Country Verification' : 
                          'Identity Verification'}
                       </h3>
-                      <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
-                        <Calendar className="h-3 w-3" />
-                        <span>
+                      <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-gray-400 mt-1">
+                        <Calendar className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">
                           {new Date(record.timestamp).toLocaleString()}
                         </span>
                       </div>
@@ -111,17 +112,23 @@ export default function History() {
 
                   <div className="space-y-2 text-xs sm:text-sm">
                     {record.proofType === 'age18' && (
-                      <div className="flex items-center justify-between gap-4 py-2 border-b border-white/10">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-4 py-2 border-b border-white/10">
                         <dt className="text-gray-400 font-medium">Age Verification</dt>
-                        <dd className={record.result.ageVerified ? 'text-emerald-300 font-semibold' : 'text-red-300 font-semibold'}>
+                        <dd className={clsx(
+                          'font-semibold text-right sm:text-left',
+                          record.result.ageVerified ? 'text-emerald-300' : 'text-red-300'
+                        )}>
                           {record.result.ageVerified ? 'Age Verified ✅' : 'Age Not Verified ❌'}
                         </dd>
                       </div>
                     )}
                     {record.proofType === 'country' && (
-                      <div className="flex items-center justify-between gap-4 py-2 border-b border-white/10">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-4 py-2 border-b border-white/10">
                         <dt className="text-gray-400 font-medium">Country Verification</dt>
-                        <dd className={record.result.countryVerified ? 'text-emerald-300 font-semibold' : 'text-red-300 font-semibold'}>
+                        <dd className={clsx(
+                          'font-semibold text-right sm:text-left',
+                          record.result.countryVerified ? 'text-emerald-300' : 'text-red-300'
+                        )}>
                           {record.result.countryVerified ? 'Country Verified ✅' : 'Country Not Verified ❌'}
                         </dd>
                       </div>
@@ -129,10 +136,10 @@ export default function History() {
                     {record.proofHash && (
                       <div className="pt-2">
                         <dt className="text-gray-400 mb-1.5 flex items-center gap-2">
-                          <Hash className="h-3 w-3" />
-                          Proof Hash
+                          <Hash className="h-3 w-3 flex-shrink-0" />
+                          <span>Proof Hash</span>
                         </dt>
-                        <dd className="text-[11px] sm:text-xs text-gray-300 break-all font-mono bg-neutral-900/40 rounded p-2">
+                        <dd className="text-[10px] sm:text-[11px] lg:text-xs text-gray-300 break-all font-mono bg-neutral-900/40 rounded p-2">
                           {record.proofHash}
                         </dd>
                       </div>
