@@ -7,18 +7,17 @@ import { Key, CheckCircle2, Download, Shield, ArrowLeft, Loader2, AlertCircle } 
 import WalletConnect from '@/components/WalletConnect';
 import { generateAgeProof, generateCountryProof, generateUniquenessProof } from '@/lib/zk/proof';
 
-type ClaimType = 'age18' | 'nationality' | 'student' | 'uniqueness' | '';
+type ClaimType = 'age18' | 'nationality' | 'student' | '';
 
 export default function GenerateProof() {
   const { address, isConnected } = useAccount();
   const [claimType, setClaimType] = useState<ClaimType>('');
   const [selectedCredential, setSelectedCredential] = useState<string>('');
   const [credentials, setCredentials] = useState<any[]>([]);
-  const [ageInput, setAgeInput] = useState('');
-  const [countryInput, setCountryInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [proofGenerated, setProofGenerated] = useState(false);
   const [proof, setProof] = useState<any>(null);
+  const [proofId, setProofId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -51,68 +50,74 @@ export default function GenerateProof() {
     try {
       let proofResult: any;
 
+      // Require credential selection for all proof types
+      if (!selectedCredential) {
+        throw new Error('Please select a credential to generate a proof');
+      }
+
+      const cred = credentials.find((c: any) => c.id === selectedCredential);
+      if (!cred) {
+        throw new Error('Selected credential not found');
+      }
+
       if (claimType === 'age18') {
-        // If user entered age manually, use it; otherwise try to derive from credential
-        let age = parseInt(ageInput || '0', 10);
-        if (!age && selectedCredential) {
-          const cred = credentials.find((c: any) => c.id === selectedCredential);
-          const dob = cred?.extractedFields?.dob || cred?.fields?.dob;
-          if (dob) {
-            const dobDate = new Date(dob);
-            const now = new Date();
-            age = now.getFullYear() - dobDate.getFullYear();
-          }
+        // Derive age from credential DOB
+        const dob = cred?.extractedFields?.dob || cred?.extractedFields?.date_of_birth || cred?.fields?.dob;
+        if (!dob) {
+          throw new Error('Selected credential does not have a date of birth');
         }
-        if (!age || isNaN(age)) {
-          throw new Error('Please provide a valid age or select a credential with a DOB');
+        const dobDate = new Date(dob);
+        const now = new Date();
+        let age = now.getFullYear() - dobDate.getFullYear();
+        const monthDiff = now.getMonth() - dobDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dobDate.getDate())) {
+          age--;
+        }
+        if (!age || isNaN(age) || age < 18) {
+          throw new Error('Selected credential indicates age is less than 18');
         }
         proofResult = await generateAgeProof(age, 18);
       } else if (claimType === 'nationality') {
-        // Use country code input or credential field
-        let userCountry = countryInput.trim().toUpperCase();
-        if (!userCountry && selectedCredential) {
-          const cred = credentials.find((c: any) => c.id === selectedCredential);
-          userCountry = (cred?.extractedFields?.countryCode || cred?.fields?.countryCode || '').toUpperCase();
-        }
+        // Use country code from credential
+        const userCountry = (cred?.extractedFields?.countryCode || cred?.extractedFields?.country_code || cred?.fields?.countryCode || '').toUpperCase();
         if (!userCountry) {
-          throw new Error('Please provide your country code or select a credential with a country code');
+          throw new Error('Selected credential does not have a country code');
         }
         // For MVP, require userCountry to equal required country (self-asserted)
         proofResult = await generateCountryProof(userCountry, userCountry);
       } else if (claimType === 'student') {
-        // For MVP, use uniqueness proof with a simple identifier from credential
-        let identifier = '';
-        if (selectedCredential) {
-          const cred = credentials.find((c: any) => c.id === selectedCredential);
-          identifier =
-            cred?.extractedFields?.studentId ||
-            cred?.fields?.studentId ||
-            cred?.id ||
-            '';
-        }
+        // Use uniqueness proof with a simple identifier from credential
+        const identifier =
+          cred?.extractedFields?.studentId ||
+          cred?.fields?.studentId ||
+          cred?.extractedFields?.id_number ||
+          cred?.fields?.documentNumber ||
+          cred?.id ||
+          '';
         if (!identifier) {
-          throw new Error('Please select a credential that includes a student identifier');
+          throw new Error('Selected credential does not include a student identifier');
         }
-        proofResult = await generateUniquenessProof(identifier);
-      } else if (claimType === 'uniqueness') {
-        // Use the connected wallet address directly as the human uniqueness anchor
-        const identifier = address;
         proofResult = await generateUniquenessProof(identifier);
       } else {
         throw new Error('Unsupported claim type');
       }
 
-      // Store proof locally
+      // Store proof locally with unique ID
       const stored = localStorage.getItem('blurd_proofs');
       const proofs = stored ? JSON.parse(stored) : [];
-      proofs.push({
+      const proofId = `proof-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      const proofRecord = {
         ...proofResult,
+        id: proofId,
         claimType,
         generatedAt: new Date().toISOString(),
-      });
+        credentialId: selectedCredential,
+      };
+      proofs.push(proofRecord);
       localStorage.setItem('blurd_proofs', JSON.stringify(proofs));
 
       setProof(proofResult);
+      setProofId(proofId);
       setProofGenerated(true);
     } catch (err: any) {
       console.error('Proof generation error:', err);
@@ -195,9 +200,16 @@ export default function GenerateProof() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
+            <Link
+              href={`/my-proofs?proof=${proofId}`}
+              className="flex-1 flex items-center justify-center space-x-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+            >
+              <Shield className="h-4 w-4" />
+              <span>View Proof</span>
+            </Link>
             <button
               onClick={handleDownload}
-              className="flex-1 flex items-center justify-center space-x-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+              className="flex-1 flex items-center justify-center space-x-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
             >
               <Download className="h-4 w-4" />
               <span>Download Proof</span>
@@ -257,70 +269,39 @@ export default function GenerateProof() {
               <option value="age18">Age ≥ 18</option>
               <option value="nationality">Nationality</option>
               <option value="student">Student Status</option>
-              <option value="uniqueness">Human Uniqueness (one-human-one-handle)</option>
             </select>
             <p className="mt-1 text-xs text-gray-400">
               Choose what you want to prove about yourself without revealing the actual value.
             </p>
           </div>
 
-          {/* Optional Inputs for Claims */}
-          {claimType === 'age18' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Your Age (optional)
-              </label>
-              <input
-                type="number"
-                value={ageInput}
-                onChange={(e) => setAgeInput(e.target.value)}
-                placeholder="Enter your age or select a credential with DOB"
-                className="block w-full rounded-lg border border-white/10 bg-white/5 px  -4 py-3 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-              />
-              <p className="mt-1 text-xs text-gray-400">
-                If left empty, the app will try to derive your age from the selected credential&apos;s DOB.
+          {/* Credential Selection (Required) */}
+          {credentials.length === 0 ? (
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+              <p className="text-sm text-yellow-300">
+                No credentials found. Please <Link href="/credentials/upload" className="underline hover:text-yellow-200">upload a credential</Link> first before generating a proof.
               </p>
             </div>
-          )}
-
-          {claimType === 'nationality' && (
+          ) : (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Country Code (optional)
-              </label>
-              <input
-                type="text"
-                value={countryInput}
-                onChange={(e) => setCountryInput(e.target.value)}
-                placeholder="e.g. US, NG, DE or select a credential with country code"
-                className="block w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-              />
-              <p className="mt-1 text-xs text-gray-400">
-                If left empty, the app will try to use the country code from the selected credential.
-              </p>
-            </div>
-          )}
-
-          {/* Credential Selection (Optional) */}
-          {credentials.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Select Credential (Optional)
+                Select Credential <span className="text-red-400">*</span>
               </label>
               <select
                 value={selectedCredential}
                 onChange={(e) => setSelectedCredential(e.target.value)}
+                required
                 className="block w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               >
-                <option value="">None (manual input)</option>
+                <option value="">Select a credential</option>
                 {credentials.map((cred: any) => (
                   <option key={cred.id} value={cred.id}>
-                    {cred.documentType} - {new Date(cred.uploadedAt).toLocaleDateString()}
+                    {cred.documentType || cred.document_type || 'Unknown'} - {new Date(cred.uploadedAt || cred.issuedAt).toLocaleDateString()}
                   </option>
                 ))}
               </select>
               <p className="mt-1 text-xs text-gray-400">
-                Use a previously uploaded credential or enter data manually.
+                Select a previously uploaded credential to generate a proof from.
               </p>
             </div>
           )}
@@ -328,9 +309,9 @@ export default function GenerateProof() {
           {/* Generate Button */}
           <button
             onClick={handleGenerateProof}
-            disabled={loading || !claimType}
+            disabled={loading || !claimType || !selectedCredential || credentials.length === 0}
             className={`w-full rounded-lg px-6 py-3 text-sm font-semibold text-white transition-all flex items-center justify-center space-x-2 ${
-              loading || !claimType
+              loading || !claimType || !selectedCredential || credentials.length === 0
                 ? 'bg-gray-600 cursor-not-allowed opacity-60'
                 : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500'
             }`}

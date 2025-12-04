@@ -3,12 +3,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { Upload, Shield, Key, Download, CheckCircle2, AlertCircle, User, Calendar, FileText, List, Plus, Eye, Trash2, RefreshCw, Globe, X, Info, XCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useAccount } from 'wagmi';
 import WalletConnect from '@/components/WalletConnect';
-import { generateAgeProof, generateUniquenessProof, generateCountryProof, downloadProof, storeProof, loadStoredProofs, ProofResult } from '@/lib/zk/proof';
+import { generateAgeProof, generateCountryProof, downloadProof, storeProof, loadStoredProofs, ProofResult } from '@/lib/zk/proof';
 import CredentialUpload from '@/components/CredentialUpload';
 import { computeIdCommit, computeUniqueKey, computeUniqueKeyHash, generateNonce } from '@/lib/crypto';
-import { extractPrimaryIdentifier } from '@/lib/uniqueness/hashIdentifier';
 
 type TabType = 'issue' | 'generate' | 'stored';
 
@@ -35,8 +35,10 @@ interface Credential {
 
 export default function MyProofs() {
   const { address, isConnected } = useAccount();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabType>('issue');
   const [mounted, setMounted] = useState(false);
+  const [highlightedProofId, setHighlightedProofId] = useState<string | null>(null);
   
   // Issue New Proof State
   const [extractedFields, setExtractedFields] = useState<any>({});
@@ -46,20 +48,18 @@ export default function MyProofs() {
   // Generate from Credential State
   const [credentials, setCredentials] = useState<Credential[]>([]);
   const [selectedCredential, setSelectedCredential] = useState<Credential | null>(null);
-  const [proofType, setProofType] = useState<'age18' | 'uniqueness' | 'country' | null>(null);
+  const [proofType, setProofType] = useState<'age18' | 'country' | null>(null);
   const [userAge, setUserAge] = useState('');
   const [userCountryCode, setUserCountryCode] = useState('');
   const [requiredCountryCode, setRequiredCountryCode] = useState('');
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewData, setPreviewData] = useState<{
-    type: 'age18' | 'uniqueness' | 'country';
+    type: 'age18' | 'country';
     dob?: string;
     age?: number;
     countryCode?: string;
     country?: string;
     countryNumeric?: number;
-    documentNumber?: string;
-    identifier?: string;
   } | null>(null);
   
   // Auto-fill requiredCountryCode from selected credential when nationality proof is selected
@@ -148,8 +148,22 @@ export default function MyProofs() {
     setMounted(true);
     loadCredentials();
     loadStoredProofsList();
+    
+    // Check for proof query parameter and switch to stored tab
+    const proofId = searchParams.get('proof');
+    if (proofId) {
+      setHighlightedProofId(proofId);
+      setActiveTab('stored');
+      // Scroll to proof after a short delay to allow rendering
+      setTimeout(() => {
+        const proofElement = document.getElementById(`proof-${proofId}`);
+        if (proofElement) {
+          proofElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   const loadCredentials = () => {
     const stored = localStorage.getItem('blurd_credentials');
@@ -258,22 +272,6 @@ export default function MyProofs() {
       setRequiredCountryCode(countryCode);
     }
 
-    // For uniqueness proof, extract unique identifier from selected credential
-    if (proofType === 'uniqueness') {
-      if (!selectedCredential) {
-        alert('Please select a credential first');
-        setGenerating(false);
-        return;
-      }
-      
-      const identifier = extractPrimaryIdentifier(selectedCredential.fields);
-      if (!identifier) {
-        alert('Selected credential does not have a unique identifier (documentNumber, passportNumber, or serialNumber). Please issue a new credential from a document that contains a unique identifier.');
-        setGenerating(false);
-        return;
-      }
-    }
-
     // Prepare preview data
     let preview: typeof previewData = null;
     
@@ -303,17 +301,6 @@ export default function MyProofs() {
         countryCode: countryCode,
         country: selectedCredential?.fields?.country,
       };
-    } else if (proofType === 'uniqueness') {
-      const identifier = extractPrimaryIdentifier(selectedCredential.fields);
-      if (!identifier) {
-        alert('Selected credential does not have a unique identifier');
-        return;
-      }
-      preview = {
-        type: 'uniqueness',
-        identifier: identifier,
-        documentNumber: selectedCredential.fields.documentNumber || selectedCredential.fields.passportNumber || selectedCredential.fields.serialNumber,
-      };
     }
     
     // Show preview modal
@@ -341,8 +328,6 @@ export default function MyProofs() {
         result = await generateAgeProof(previewData.age, 18);
       } else if (proofType === 'country' && previewData.countryCode) {
         result = await generateCountryProof(previewData.countryCode, previewData.countryCode);
-      } else if (proofType === 'uniqueness' && previewData.identifier) {
-        result = await generateUniquenessProof(previewData.identifier);
       } else {
         throw new Error('Invalid proof type or missing data');
       }
@@ -696,20 +681,6 @@ export default function MyProofs() {
                         <p className="text-xs text-gray-400">Prove country membership</p>
                       </button>
 
-                      <button
-                        onClick={() => setProofType('uniqueness')}
-                        className={`p-4 sm:p-6 rounded-lg border transition-colors text-left touch-manipulation min-h-[100px] sm:col-span-2 md:col-span-1 ${
-                          proofType === 'uniqueness'
-                            ? 'border-purple-500 bg-purple-500/10'
-                            : 'border-white/10 bg-white/5 hover:bg-white/10'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-2 sm:space-x-3 mb-2">
-                          <User className="h-5 w-5 text-purple-400 flex-shrink-0" />
-                          <span className="font-semibold text-white text-sm sm:text-base">Human Uniqueness</span>
-                        </div>
-                        <p className="text-xs text-gray-400">Generate uniqueness proof</p>
-                      </button>
                     </div>
                   </div>
 
@@ -802,89 +773,19 @@ export default function MyProofs() {
                     </div>
                   )}
 
-                  {proofType === 'uniqueness' && (
-                    <div>
-                      {selectedCredential ? (
-                        (() => {
-                          const identifier = extractPrimaryIdentifier(selectedCredential.fields);
-                          const identifierType = selectedCredential.fields.documentNumber 
-                            ? 'Document Number' 
-                            : selectedCredential.fields.passportNumber 
-                            ? 'Passport Number' 
-                            : selectedCredential.fields.serialNumber 
-                            ? 'Serial Number' 
-                            : null;
-                          
-                          return identifier ? (
-                            <div className="space-y-3">
-                              <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-md">
-                                <p className="text-sm font-medium text-purple-400 mb-2">
-                                  <CheckCircle2 className="h-4 w-4 inline-block mr-1" />
-                                  Unique Identifier Extracted (hashed)
-                                </p>
-                                <div className="space-y-2">
-                                  <div>
-                                    <p className="text-xs text-gray-400 mb-1">{identifierType}:</p>
-                                    <p className="text-lg font-semibold text-white font-mono">
-                                      {identifier}
-                                    </p>
-                                  </div>
-                                  {selectedCredential.fields.documentNumber && (
-                                    <p className="text-xs text-green-400">✓ Document Number Verified</p>
-                                  )}
-                                  {selectedCredential.fields.passportNumber && (
-                                    <p className="text-xs text-green-400">✓ Passport Number Verified</p>
-                                  )}
-                                  {selectedCredential.fields.serialNumber && (
-                                    <p className="text-xs text-green-400">✓ Serial Number Processed Privately</p>
-                                  )}
-                                  <p className="text-xs text-gray-400 mt-2">
-                                    This identifier will be hashed locally and never stored in plaintext. Only the hash commitment will be stored.
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-md">
-                                <p className="text-sm text-blue-400">
-                                  ✓ Ready to generate uniqueness proof
-                                </p>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-md">
-                              <p className="text-sm text-yellow-400 mb-2">
-                                ⚠️ No unique identifier found in this credential
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                The selected credential does not contain a documentNumber, passportNumber, or serialNumber. Please issue a new credential from a document that contains a unique identifier.
-                              </p>
-                            </div>
-                          );
-                        })()
-                      ) : (
-                        <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-md">
-                          <p className="text-sm text-yellow-400">
-                            ⚠️ Please select a credential first
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
                   <button
                     onClick={handleGenerateFromCredential}
                     disabled={
                       generating || 
                       !proofType || 
                       (proofType === 'age18' && (!selectedCredential?.fields?.dob || !ageInfo.is18Plus)) ||
-                      (proofType === 'country' && !selectedCredential?.fields?.countryCode) ||
-                      (proofType === 'uniqueness' && !extractPrimaryIdentifier(selectedCredential?.fields || {}))
+                      (proofType === 'country' && !selectedCredential?.fields?.countryCode)
                     }
                     className={`w-full rounded-md px-4 sm:px-6 py-3 text-xs sm:text-sm font-semibold text-white transition-colors flex items-center justify-center space-x-2 touch-manipulation min-h-[44px] ${
                       generating || 
                       !proofType || 
                       (proofType === 'age18' && (!selectedCredential?.fields?.dob || !ageInfo.is18Plus)) ||
-                      (proofType === 'country' && !selectedCredential?.fields?.countryCode) ||
-                      (proofType === 'uniqueness' && !extractPrimaryIdentifier(selectedCredential?.fields || {}))
+                      (proofType === 'country' && !selectedCredential?.fields?.countryCode)
                         ? 'bg-gray-600 cursor-not-allowed'
                         : 'bg-blue-600 hover:bg-blue-700'
                     }`}
@@ -924,10 +825,18 @@ export default function MyProofs() {
             </div>
           ) : (
             <div className="space-y-4">
-              {storedProofs.map((proof, index) => (
+              {storedProofs.map((proof, index) => {
+                const proofId = (proof as any).id || `proof-${index}`;
+                const isHighlighted = highlightedProofId === proofId;
+                return (
                 <div
                   key={index}
-                  className="bg-neutral-800/40 rounded-lg border border-white/10 p-6"
+                  id={`proof-${proofId}`}
+                  className={`bg-neutral-800/40 rounded-lg border p-6 transition-all ${
+                    isHighlighted 
+                      ? 'border-blue-500/50 bg-blue-500/10 shadow-lg shadow-blue-500/20' 
+                      : 'border-white/10'
+                  }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -967,7 +876,8 @@ export default function MyProofs() {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -1031,28 +941,6 @@ export default function MyProofs() {
                         <span className="text-white font-semibold">{previewData.country}</span>
                       </div>
                     )}
-                  </div>
-                )}
-                
-                {previewData.type === 'uniqueness' && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm">Identifier Type:</span>
-                      <span className="text-white font-semibold">Document Number</span>
-                    </div>
-                    {previewData.documentNumber && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400 text-sm">Value:</span>
-                        <span className="text-white font-mono text-xs break-all max-w-[200px] text-right">
-                          {previewData.documentNumber}
-                        </span>
-                      </div>
-                    )}
-                    <div className="pt-2 border-t border-white/10">
-                      <p className="text-xs text-gray-400">
-                        This identifier will be hashed and used to verify uniqueness.
-                      </p>
-                    </div>
                   </div>
                 )}
               </div>
