@@ -667,41 +667,63 @@ function extractFullName(text: string): string | null {
 }
 
 /**
- * Extract date of birth
+ * Extract date of birth - Enhanced for better detection
  */
 function extractDateOfBirth(text: string): string | null {
-  // Look for DOB near birth keywords
-  const birthContextRegex = /(?:date\s+of\s+birth|dob|birth\s+date|born|birth|D\.O\.B|D\.O\.B\.)\s*[:\-\.]?\s*((\b\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\b)|(\b\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}\b)|(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4}\b))/i;
+  if (!text || text.trim().length === 0) return null;
   
-  let match = text.match(birthContextRegex);
-  if (match) {
-    const dateStr = match[2] || match[3] || match[4] || match[1];
-    if (dateStr) {
-      const parsed = parseDateToISO(dateStr);
-      if (parsed) {
-        const dobDate = new Date(parsed);
-        const today = new Date();
-        if (dobDate < today && dobDate > new Date(1900, 0, 1)) {
-          return parsed;
+  // Enhanced patterns for DOB detection (more lenient)
+  const birthPatterns = [
+    // Pattern 1: Near birth keywords (highest priority) - more flexible spacing
+    /(?:date\s+of\s+birth|dob|birth\s+date|born|birth|D\.O\.B|D\.O\.B\.|DOB|BIRTH|DATE\s+OF\s+BIRTH)\s*[:\-\.\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4})/i,
+    // Pattern 2: Dates with 19xx or 20xx years (common DOB format)
+    /\b(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.](?:19|20)\d{2})\b/,
+    // Pattern 3: YYYY-MM-DD or YYYY/MM/DD (ISO format)
+    /\b((?:19|20)\d{2}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})\b/,
+    // Pattern 4: Text month format
+    /\b((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+(?:19|20)\d{2})\b/i,
+    // Pattern 5: DD-MM-YYYY or DD/MM/YYYY (common in many countries)
+    /\b(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.](?:19|20)\d{2})\b/,
+  ];
+  
+  // Try each pattern
+  for (const pattern of birthPatterns) {
+    const matches = text.matchAll(new RegExp(pattern.source, 'gi'));
+    for (const match of matches) {
+      const dateStr = match[1] || match[2] || match[3];
+      if (dateStr) {
+        const parsed = parseDateToISO(dateStr);
+        if (parsed) {
+          const dobDate = new Date(parsed);
+          const today = new Date();
+          // Validate: must be in the past and reasonable (1900-2100)
+          if (dobDate < today && dobDate > new Date(1900, 0, 1) && dobDate < new Date(2100, 0, 1)) {
+            return parsed;
+          }
         }
       }
     }
   }
   
-  // Try all dates in text (prefer earlier dates)
-  const dateRegex = /(\b\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\b)|(\b\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}\b)|(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4}\b)/i;
-  match = text.match(dateRegex);
-  if (match) {
-    const dateStr = match[1] || match[2] || match[3];
-    if (dateStr) {
+  // Fallback: Try all date patterns in text (prefer dates that look like birth dates)
+  const allDates = text.match(/(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.](?:19|20)\d{2})|((?:19|20)\d{2}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})|((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+(?:19|20)\d{2})/gi);
+  if (allDates) {
+    // Try each date found, prefer earlier dates (more likely to be DOB)
+    const validDates: Array<{ date: string; parsed: string; timestamp: number }> = [];
+    for (const dateStr of allDates) {
       const parsed = parseDateToISO(dateStr);
       if (parsed) {
         const dobDate = new Date(parsed);
         const today = new Date();
-        if (dobDate < today && dobDate > new Date(1900, 0, 1)) {
-          return parsed;
+        if (dobDate < today && dobDate > new Date(1900, 0, 1) && dobDate < new Date(2100, 0, 1)) {
+          validDates.push({ date: dateStr, parsed, timestamp: dobDate.getTime() });
         }
       }
+    }
+    // Return the earliest date (most likely to be DOB)
+    if (validDates.length > 0) {
+      validDates.sort((a, b) => a.timestamp - b.timestamp);
+      return validDates[0].parsed;
     }
   }
   
@@ -813,23 +835,7 @@ export function extractFields(rawText: string): ExtractedFields {
       // Silently continue if country detection fails
     }
     
-    // Extract unique ID number
-    try {
-      const idData = extractUniqueIdNumber(rawText);
-      if (idData) {
-        result.id_number = idData.id;
-        result.documentNumber = idData.id; // Legacy
-        
-        // Check if it's a VIN
-        if (/VIN|Voter/i.test(rawText) && idData.id.length >= 10) {
-          result.voterNumber = idData.id;
-        }
-        
-        result.detected_by!.id_number = idData.methods;
-      }
-    } catch (e) {
-      // Silently continue if ID extraction fails
-    }
+    // Skip ID number extraction - user only wants DOB and country
     
     // Extract full name
     try {
