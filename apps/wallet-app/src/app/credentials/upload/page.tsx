@@ -62,8 +62,9 @@ export default function UploadCredential() {
       
       // Bind credential to wallet address using Poseidon hash
       const { poseidon } = await import('circomlibjs');
-      const walletHash = poseidon([BigInt(address.slice(2, 10), 16)]);
-      const documentHash = poseidon([BigInt(file.name.length), BigInt(file.size)]);
+      const walletBigInt = BigInt('0x' + address.slice(2, 18)); // Use first 16 hex chars
+      const walletHash = poseidon([walletBigInt]);
+      const documentHash = poseidon([BigInt(file.name.length + file.size)]);
       const credentialHash = poseidon([walletHash, documentHash]);
 
       // Store credential locally
