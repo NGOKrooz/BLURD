@@ -4,7 +4,7 @@ import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 
 /**
  * Transaction Loading Animation Component
- * Shows animated spinner and status while waiting for Starknet transaction confirmation
+ * Shows animated spinner and status while waiting for transaction confirmation
  */
 interface TransactionLoadingProps {
   status: 'pending' | 'accepted' | 'rejected' | 'confirmed';
@@ -18,7 +18,7 @@ export default function TransactionLoading({ status, txHash, message }: Transact
       case 'pending':
         return {
           icon: <Loader2 className="h-8 w-8 text-blue-400 animate-spin" />,
-          text: message || 'Waiting for confirmation on Starknet Testnet...',
+          text: message || 'Waiting for confirmation on the network...',
           color: 'text-blue-400',
           bgColor: 'bg-blue-500/10',
           borderColor: 'border-blue-500/30',
@@ -34,7 +34,7 @@ export default function TransactionLoading({ status, txHash, message }: Transact
       case 'confirmed':
         return {
           icon: <CheckCircle2 className="h-8 w-8 text-green-400" />,
-          text: 'Transaction confirmed on Starknet Testnet',
+          text: 'Transaction confirmed',
           color: 'text-green-400',
           bgColor: 'bg-green-500/10',
           borderColor: 'border-green-500/30',

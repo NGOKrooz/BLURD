@@ -42,11 +42,11 @@ export default function StatusModal({
     return `${hash.slice(0, 10)}...${hash.slice(-8)}`;
   };
 
-  const getStarkScanTxUrl = (hash: string) => 
-    `https://sepolia.starkscan.co/tx/${hash}`;
+  const getExplorerTxUrl = (hash: string) => 
+    `https://sepolia.etherscan.io/tx/${hash}`;
   
-  const getStarkScanContractUrl = (address: string) => 
-    `https://sepolia.starkscan.co/contract/${address}`;
+  const getExplorerContractUrl = (address: string) => 
+    `https://sepolia.etherscan.io/address/${address}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -130,12 +130,12 @@ export default function StatusModal({
             
             <div className="mb-4 px-4 py-2 bg-green-500/20 border border-green-500/30 rounded-lg inline-block">
               <h2 className="text-lg sm:text-xl font-bold text-green-400">
-                ✅ PRIVATE PAYMENT SUCCESSFUL
+                ✅ OPERATION SUCCESSFUL
               </h2>
             </div>
 
             <p className="text-sm text-gray-300 mb-6">
-              Your transaction has been confirmed on Starknet Sepolia
+              Your operation has been confirmed on the network.
             </p>
 
             {/* Transaction Details */}
@@ -145,7 +145,7 @@ export default function StatusModal({
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-400">Transaction Hash</span>
                     <a
-                      href={getStarkScanTxUrl(txHash)}
+                      href={getExplorerTxUrl(txHash)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center space-x-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
@@ -162,7 +162,7 @@ export default function StatusModal({
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-400">Contract Address</span>
                     <a
-                      href={getStarkScanContractUrl(contractAddress)}
+                      href={getExplorerContractUrl(contractAddress)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center space-x-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
