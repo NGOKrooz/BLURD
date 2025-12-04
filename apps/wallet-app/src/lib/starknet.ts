@@ -2,6 +2,7 @@
 
 import { RpcProvider, Contract, Account } from 'starknet';
 import privatePaymentAbi from '@/lib/abis/private-payment.json';
+import { getWorkingProvider, validateStarknetNetwork, SN_SEPOLIA_CHAIN_ID } from './starknet/rpc';
 
 declare global {
   interface Window {
@@ -11,17 +12,11 @@ declare global {
   }
 }
 
-// Starknet Sepolia chain ID
-const SN_SEPOLIA_CHAIN_ID = '0x534e5f5345504f4c4941';
-
 // STRK token contract on Starknet Sepolia
 const STRK_TOKEN_ADDRESS = '0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d';
 
 // ETH token contract on Starknet Sepolia  
 const ETH_TOKEN_ADDRESS = '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7';
-
-// Default Sepolia RPC endpoint
-const DEFAULT_RPC_URL = 'https://starknet-sepolia.public.blastapi.io';
 
 // Get contract address from environment
 const getContractAddress = (): string => {
@@ -33,43 +28,37 @@ const getContractAddress = (): string => {
   return address;
 };
 
-// Get RPC URL from environment or use default
-const getRpcUrl = (): string => {
-  if (typeof window !== 'undefined') {
-    const envRpc = process.env.NEXT_PUBLIC_STARKNET_RPC;
-    if (envRpc) return envRpc;
-  }
-  return DEFAULT_RPC_URL;
-};
-
-// Create a single shared RpcProvider instance
+// Get provider using the robust RPC system with fallbacks
 let providerInstance: RpcProvider | null = null;
+let providerPromise: Promise<RpcProvider> | null = null;
 
-export function getProvider(): RpcProvider {
+export async function getProvider(): Promise<RpcProvider> {
+  // If we have a cached instance, return it
   if (providerInstance) {
     return providerInstance;
   }
 
-  const rpcUrl = getRpcUrl();
-  
-  try {
-    providerInstance = new RpcProvider({ 
-      nodeUrl: rpcUrl 
-    });
-    console.log('RpcProvider initialized with:', rpcUrl);
-  } catch (error) {
-    console.error('Failed to create RpcProvider:', error);
-    // Fallback to default
-    providerInstance = new RpcProvider({ 
-      nodeUrl: DEFAULT_RPC_URL 
-    });
+  // If we're already fetching, return the same promise
+  if (providerPromise) {
+    return providerPromise;
   }
 
-  return providerInstance;
+  // Create a new promise to fetch provider
+  providerPromise = getWorkingProvider().then((provider) => {
+    providerInstance = provider;
+    return provider;
+  });
+
+  return providerPromise;
 }
 
-// Export provider for use in other modules
-export const provider = getProvider();
+// Synchronous getter for backwards compatibility (will use cached provider or throw)
+export function getProviderSync(): RpcProvider {
+  if (!providerInstance) {
+    throw new Error('Provider not initialized. Call getProvider() first.');
+  }
+  return providerInstance;
+}
 
 /**
  * Detect and connect to Starknet wallet (Argent X or Braavos)
@@ -92,90 +81,140 @@ export async function detectAndConnectWallet() {
 
 /**
  * Check if wallet is on Starknet Sepolia network
+ * Uses the robust RPC system with fallbacks
  */
 export async function checkNetwork(): Promise<{ valid: boolean; chainId: string; error?: string }> {
   try {
-    const provider = getProvider();
+    const provider = await getProvider();
+    await validateStarknetNetwork(provider);
     const chainId = await provider.getChainId();
-    
-    if (chainId !== SN_SEPOLIA_CHAIN_ID) {
-      return {
-        valid: false,
-        chainId,
-        error: 'Please switch your wallet to Starknet Sepolia network.'
-      };
-    }
     
     return { valid: true, chainId };
   } catch (error: any) {
     console.error('Network check failed:', error);
+    
+    // Provide specific error messages
+    let errorMessage = 'Failed to check network. Please verify your RPC connection.';
+    
+    if (error.message?.includes('RPC unreachable')) {
+      errorMessage = error.message;
+    } else if (error.message?.includes('not on Starknet Sepolia')) {
+      errorMessage = 'Wallet connected to wrong network. Please switch to Starknet Sepolia.';
+    } else if (error.message?.includes('Unable to fetch chain ID')) {
+      errorMessage = 'Unable to fetch chain ID. Provider failure — switching to fallback RPC.';
+    }
+    
     return {
       valid: false,
       chainId: '',
-      error: 'Failed to check network. Please verify your RPC connection.'
+      error: errorMessage
     };
   }
 }
 
 /**
  * Get STRK balance for an address
+ * Uses the robust RPC system with automatic fallback retry
  */
 export async function getStarknetBalance(address: string): Promise<bigint> {
-  try {
-    const provider = getProvider();
-    
-    if (!address) {
-      console.error('getStarknetBalance: Address is required');
-      return 0n;
-    }
-
-    // Call balanceOf on the STRK token contract
-    const result = await provider.callContract({
-      contractAddress: STRK_TOKEN_ADDRESS,
-      entrypoint: 'balanceOf',
-      calldata: [address],
-    });
-    
-    // Result is uint256 (low, high) - combine them
-    const resultArray = (result as any).result || result;
-    const low = BigInt(resultArray[0] || '0');
-    const high = BigInt(resultArray[1] || '0');
-    const balance = low + (high << 128n);
-    
-    return balance;
-  } catch (error: any) {
-    console.error('Failed to fetch STRK balance:', error);
+  if (!address) {
+    console.error('getStarknetBalance: Address is required');
     return 0n;
   }
+
+  // Try with retry logic using fallback providers
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const provider = await getProvider();
+      
+      // Validate network first
+      await validateStarknetNetwork(provider);
+
+      // Call balanceOf on the STRK token contract
+      const result = await provider.callContract({
+        contractAddress: STRK_TOKEN_ADDRESS,
+        entrypoint: 'balanceOf',
+        calldata: [address],
+      });
+      
+      // Result is uint256 (low, high) - combine them
+      const resultArray = (result as any).result || result;
+      const low = BigInt(resultArray[0] || '0');
+      const high = BigInt(resultArray[1] || '0');
+      const balance = low + (high << 128n);
+      
+      return balance;
+    } catch (error: any) {
+      lastError = error;
+      console.warn(`Failed to fetch STRK balance (attempt ${attempt + 1}):`, error.message);
+      
+      // If it's an RPC error, clear cache and retry
+      if (error.message?.includes('RPC unreachable') || error.message?.includes('Provider failure')) {
+        const { clearProviderCache } = await import('./starknet/rpc');
+        clearProviderCache();
+        // Will try next RPC on next attempt
+        continue;
+      }
+      
+      // For other errors, don't retry
+      break;
+    }
+  }
+  
+  console.error('Failed to fetch STRK balance after retries:', lastError);
+  return 0n;
 }
 
 /**
  * Get ETH balance for an address
+ * Uses the robust RPC system with automatic fallback retry
  */
 export async function getEthBalance(address: string): Promise<bigint> {
-  try {
-    const provider = getProvider();
-    
-    if (!address) {
-      return 0n;
-    }
-
-    const result = await provider.callContract({
-      contractAddress: ETH_TOKEN_ADDRESS,
-      entrypoint: 'balanceOf',
-      calldata: [address],
-    });
-    
-    const resultArray = (result as any).result || result;
-    const low = BigInt(resultArray[0] || '0');
-    const high = BigInt(resultArray[1] || '0');
-    const balance = low + (high << 128n);
-    
-    return balance;
-  } catch (error: any) {
-    console.error('Failed to fetch ETH balance:', error);
+  if (!address) {
     return 0n;
   }
+
+  // Try with retry logic using fallback providers
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const provider = await getProvider();
+      
+      // Validate network first
+      await validateStarknetNetwork(provider);
+
+      const result = await provider.callContract({
+        contractAddress: ETH_TOKEN_ADDRESS,
+        entrypoint: 'balanceOf',
+        calldata: [address],
+      });
+      
+      const resultArray = (result as any).result || result;
+      const low = BigInt(resultArray[0] || '0');
+      const high = BigInt(resultArray[1] || '0');
+      const balance = low + (high << 128n);
+      
+      return balance;
+    } catch (error: any) {
+      lastError = error;
+      console.warn(`Failed to fetch ETH balance (attempt ${attempt + 1}):`, error.message);
+      
+      // If it's an RPC error, clear cache and retry
+      if (error.message?.includes('RPC unreachable') || error.message?.includes('Provider failure')) {
+        const { clearProviderCache } = await import('./starknet/rpc');
+        clearProviderCache();
+        continue;
+      }
+      
+      break;
+    }
+  }
+  
+  console.error('Failed to fetch ETH balance after retries:', lastError);
+  return 0n;
 }
 
 /**
@@ -217,13 +256,17 @@ export async function sendStarknetPayment({
       throw new Error('No account selected. Please select an account in your wallet.');
     }
 
-    // Step 2: Get provider
-    const provider = getProvider();
+    // Step 2: Get provider with fallback support
+    const provider = await getProvider();
 
-    // Step 3: Check network - must be Starknet Sepolia
-    const networkCheck = await checkNetwork();
-    if (!networkCheck.valid) {
-      throw new Error(networkCheck.error || 'Wrong network. Please switch to Starknet Sepolia.');
+    // Step 3: Validate network - must be Starknet Sepolia
+    try {
+      await validateStarknetNetwork(provider);
+    } catch (error: any) {
+      if (error.message?.includes('not on Starknet Sepolia')) {
+        throw new Error('Wallet connected to wrong network. Please switch to Starknet Sepolia.');
+      }
+      throw new Error(error.message || 'RPC unreachable');
     }
 
     // Step 4: Create account
@@ -300,9 +343,10 @@ export async function sendStarknetPayment({
 
 /**
  * Verify a payment transaction
+ * Uses the robust RPC system with fallback support
  */
 export async function verifyStarknetPayment(txHash: string) {
-  const provider = getProvider();
+  const provider = await getProvider();
   
   try {
     const receipt = await provider.getTransactionReceipt(txHash);
@@ -324,9 +368,15 @@ export async function verifyStarknetPayment(txHash: string) {
     };
   } catch (error: any) {
     console.error('Payment verification error:', error);
+    
+    // Provide specific error messages
+    if (error.message?.includes('RPC unreachable')) {
+      throw new Error('RPC unreachable: Unable to verify transaction. Please try again.');
+    }
+    
     throw new Error(`Failed to verify payment: ${error.message || 'Unknown error'}`);
   }
 }
 
-// Export chain ID for external use
+// Export chain ID and token addresses for external use
 export { SN_SEPOLIA_CHAIN_ID, STRK_TOKEN_ADDRESS, ETH_TOKEN_ADDRESS };

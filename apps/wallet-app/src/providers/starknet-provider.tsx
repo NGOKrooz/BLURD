@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { checkNetwork, SN_SEPOLIA_CHAIN_ID } from '@/lib/starknet';
+import { validateStarknetNetwork, getWorkingProvider } from '@/lib/starknet/rpc';
 
 /**
  * Starknet Wallet Provider
@@ -39,15 +40,52 @@ export function StarknetProvider({ children }: { children: ReactNode }) {
   const [networkError, setNetworkError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Check network when connected
+  // Startup diagnostics - initialize RPC on mount
   useEffect(() => {
-    if (isConnected) {
-      checkNetwork().then((result) => {
+    const initRpc = async () => {
+      if (typeof window !== 'undefined') {
+        try {
+          await getWorkingProvider();
+          // Diagnostics are already logged in getWorkingProvider
+        } catch (error: any) {
+          console.error('❌ No RPCs reachable. Check internet or RPC endpoints.');
+        }
+      }
+    };
+    initRpc();
+  }, []);
+
+  // Validate network immediately after connection
+  const validateNetworkImmediately = async () => {
+    try {
+      const provider = await getWorkingProvider();
+      await validateStarknetNetwork(provider);
+      setIsCorrectNetwork(true);
+      setNetworkError(null);
+    } catch (error: any) {
+      setIsCorrectNetwork(false);
+      
+      // Provide specific error messages
+      if (error.message?.includes('not on Starknet Sepolia')) {
+        setNetworkError('Wallet connected to wrong network. Please switch to Starknet Sepolia.');
+      } else if (error.message?.includes('RPC unreachable')) {
+        setNetworkError('RPC unreachable: Unable to verify network. Trying fallback RPC...');
+        // Retry with checkNetwork which has better fallback handling
+        const result = await checkNetwork();
         setIsCorrectNetwork(result.valid);
         setNetworkError(result.error || null);
-      });
+      } else {
+        setNetworkError(error.message || 'Unable to fetch chain ID');
+      }
     }
-  }, [isConnected]);
+  };
+
+  // Check network when connected - with immediate validation
+  useEffect(() => {
+    if (isConnected) {
+      validateNetworkImmediately();
+    }
+  }, [isConnected, address]);
 
   // Check for existing connection on mount and set up event listeners
   useEffect(() => {
@@ -155,6 +193,9 @@ export function StarknetProvider({ children }: { children: ReactNode }) {
       setAddress(candidate.selectedAddress);
       setIsConnected(true);
       setError(null);
+      
+      // Immediately validate network after connection
+      validateNetworkImmediately();
 
       // Set up event listeners for this wallet
       if (candidate.on) {

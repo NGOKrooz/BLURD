@@ -11,6 +11,25 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Load environment variables from .env files
+const envFiles = [".env.local", ".env"];
+for (const envFile of envFiles) {
+  const envPath = path.join(__dirname, "..", envFile);
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, "utf-8");
+    envContent.split("\n").forEach((line) => {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith("#") && trimmed.includes("=")) {
+        const [key, ...valueParts] = trimmed.split("=");
+        const value = valueParts.join("=").replace(/^["']|["']$/g, "");
+        if (key && value && !process.env[key.trim()]) {
+          process.env[key.trim()] = value.trim();
+        }
+      }
+    });
+  }
+}
+
 async function main() {
   console.log("🚀 Deploying PrivatePayment Contract...\n");
 
@@ -37,6 +56,28 @@ async function main() {
   console.log(`   Account: ${accountAddress}\n`);
 
   const provider = new RpcProvider({ nodeUrl: rpcUrl });
+  
+  // Check if account exists on network
+  let accountExists = false;
+  try {
+    await provider.getNonce(accountAddress);
+    accountExists = true;
+    console.log("✅ Account found on network\n");
+  } catch (error: any) {
+    if (error.message?.includes("starknet_getNonce") || error.message?.includes("Contract not found")) {
+      console.error("❌ Account not found on network!");
+      console.error("\nYour account needs to be deployed before it can send transactions.");
+      console.error("\nTo fix this:");
+      console.error("1. Open your Starknet wallet (Argent X or Braavos)");
+      console.error("2. Make sure you're connected to Sepolia Testnet");
+      console.error("3. If the account shows as 'Not deployed', deploy it from the wallet");
+      console.error("4. Fund it at: https://starknet-faucet.vercel.app/");
+      console.error("\nAlternatively, verify your account address is correct in .env.local");
+      process.exit(1);
+    }
+    throw error;
+  }
+
   const account = new Account(provider, accountAddress, privateKey);
 
   // Check balance
@@ -78,7 +119,8 @@ async function main() {
   let classHash: string;
 
   try {
-    const declareResponse = await account.declareIfNot({
+    // Use declare instead of declareIfNot for better error handling
+    const declareResponse = await account.declare({
       contract: sierra,
       casm: casm,
     });
@@ -93,12 +135,33 @@ async function main() {
       console.log(`   ✅ Declaration confirmed\n`);
     }
   } catch (error: any) {
-    if (error.message?.includes("already declared")) {
+    // Check if contract is already declared
+    if (
+      error.message?.includes("already declared") ||
+      error.message?.includes("Class already declared") ||
+      error.message?.includes("CONTRACT_CLASS_ALREADY_DECLARED")
+    ) {
       console.log("ℹ️  Contract already declared\n");
-      // Extract class hash from compiled contract
-      classHash = sierra.class_hash || "";
+      // Extract class hash from compiled contract or calculate it
+      if (sierra.class_hash) {
+        classHash = sierra.class_hash;
+      } else {
+        // Try to get class hash from error or calculate
+        const errorStr = JSON.stringify(error);
+        const classHashMatch = errorStr.match(/0x[a-fA-F0-9]{64}/);
+        if (classHashMatch) {
+          classHash = classHashMatch[0];
+        } else {
+          console.error("❌ Could not determine class hash");
+          throw error;
+        }
+      }
+      console.log(`   Using existing Class Hash: ${classHash}\n`);
     } else {
       console.error("❌ Declaration failed:", error.message);
+      if (error.data) {
+        console.error(`   Error data: ${JSON.stringify(error.data)}`);
+      }
       throw error;
     }
   }

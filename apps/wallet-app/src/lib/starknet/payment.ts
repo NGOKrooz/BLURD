@@ -65,8 +65,8 @@ export async function sendPrivatePayment({
       throw new Error(networkCheck.error || 'Please switch to Starknet Sepolia network.');
     }
 
-    // Step 4: Get provider and contract
-    const provider = getProvider();
+    // Step 4: Get provider and contract (using robust RPC system)
+    const provider = await getProvider();
     const contractAddress = getContractAddress();
 
     // Step 5: Generate commitment if not provided
@@ -148,7 +148,7 @@ export async function verifyPaymentCommitment(
   commitmentHash: string
 ): Promise<VerifiedPayment | null> {
   try {
-    const provider = getProvider();
+    const provider = await getProvider();
     const contractAddress = getContractAddress();
 
     const contract = new Contract(privatePaymentAbi, contractAddress, provider);
@@ -201,7 +201,7 @@ export async function getPaymentHistory(
   type: 'sent' | 'received' = 'sent'
 ): Promise<VerifiedPayment[]> {
   try {
-    const provider = getProvider();
+    const provider = await getProvider();
     const contractAddress = getContractAddress();
 
     const events = await (provider as any).getEvents({
