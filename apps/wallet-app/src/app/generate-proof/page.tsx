@@ -7,7 +7,7 @@ import { Key, CheckCircle2, Download, Shield, ArrowLeft, Loader2, AlertCircle } 
 import WalletConnect from '@/components/WalletConnect';
 import { generateAgeProof, generateCountryProof, generateUniquenessProof } from '@/lib/zk/proof';
 
-type ClaimType = 'age18' | 'nationality' | 'student' | '';
+type ClaimType = 'age18' | 'nationality' | 'student' | 'uniqueness' | '';
 
 export default function GenerateProof() {
   const { address, isConnected } = useAccount();
@@ -93,6 +93,10 @@ export default function GenerateProof() {
         if (!identifier) {
           throw new Error('Please select a credential that includes a student identifier');
         }
+        proofResult = await generateUniquenessProof(identifier);
+      } else if (claimType === 'uniqueness') {
+        // Use the connected wallet address directly as the human uniqueness anchor
+        const identifier = address;
         proofResult = await generateUniquenessProof(identifier);
       } else {
         throw new Error('Unsupported claim type');
@@ -198,13 +202,6 @@ export default function GenerateProof() {
               <Download className="h-4 w-4" />
               <span>Download Proof</span>
             </button>
-            <Link
-              href="/verify"
-              className="flex-1 flex items-center justify-center space-x-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
-            >
-              <Key className="h-4 w-4" />
-              <span>Verify Proof</span>
-            </Link>
           </div>
 
           <div className="mt-6 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
@@ -260,6 +257,7 @@ export default function GenerateProof() {
               <option value="age18">Age ≥ 18</option>
               <option value="nationality">Nationality</option>
               <option value="student">Student Status</option>
+              <option value="uniqueness">Human Uniqueness (one-human-one-handle)</option>
             </select>
             <p className="mt-1 text-xs text-gray-400">
               Choose what you want to prove about yourself without revealing the actual value.

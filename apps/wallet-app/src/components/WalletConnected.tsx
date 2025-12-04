@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Wallet, Copy, CheckCircle2, ExternalLink } from 'lucide-react';
-import { useAccount, useBalance } from 'wagmi';
+import { useAccount } from 'wagmi';
 import WalletConnect from '@/components/WalletConnect';
 
 /**
@@ -12,9 +12,6 @@ import WalletConnect from '@/components/WalletConnect';
  */
 export default function WalletConnected() {
   const { address, isConnected } = useAccount();
-  const { data: balance, isLoading: balanceLoading } = useBalance({
-    address: address,
-  });
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -87,32 +84,6 @@ export default function WalletConnected() {
               <Copy className="h-5 w-5" />
             )}
           </button>
-        </div>
-      </div>
-
-      {/* ETH Balance */}
-      <div className="mb-6">
-        <label className="block text-xs font-medium text-gray-400 mb-2">Balance</label>
-        <div className="flex items-center space-x-3 bg-neutral-800/50 rounded-lg p-4 border border-white/5">
-          <div className="flex-shrink-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20">
-              <span className="text-lg font-bold text-green-400">ETH</span>
-            </div>
-          </div>
-          <div className="flex-1">
-            <p className="text-2xl font-bold text-white">
-              {balanceLoading ? (
-                <span className="text-gray-400">Fetching balance…</span>
-              ) : balance ? (
-                parseFloat(balance.formatted).toFixed(4)
-              ) : (
-                '0.0000'
-              )}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              Ethereum Sepolia
-            </p>
-          </div>
         </div>
       </div>
 

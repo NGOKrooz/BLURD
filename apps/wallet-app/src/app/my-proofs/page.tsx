@@ -10,7 +10,7 @@ import CredentialUpload from '@/components/CredentialUpload';
 import { computeIdCommit, computeUniqueKey, computeUniqueKeyHash, generateNonce } from '@/lib/crypto';
 import { extractPrimaryIdentifier } from '@/lib/uniqueness/hashIdentifier';
 
-type TabType = 'issue' | 'generate' | 'stored' | 'verify';
+type TabType = 'issue' | 'generate' | 'stored';
 
 interface Credential {
   id: string;
@@ -142,11 +142,7 @@ export default function MyProofs() {
   // Stored Proofs State
   const [storedProofs, setStoredProofs] = useState<ProofResult[]>([]);
   
-  // Verify Proof State (Merchant)
-  const [proofFile, setProofFile] = useState<File | null>(null);
-  const [proofJson, setProofJson] = useState('');
-  const [verifying, setVerifying] = useState(false);
-  const [verificationResult, setVerificationResult] = useState<any>(null);
+  // Merchant verification is handled in the merchant app – no verification UI in wallet app
 
   useEffect(() => {
     setMounted(true);
@@ -383,42 +379,7 @@ export default function MyProofs() {
     }
   };
 
-  // Verify Proof (Merchant)
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
-  
-  const handleVerifyProof = async () => {
-    setVerifying(true);
-    setVerificationResult(null);
-    try {
-      let proofData: any;
-      
-      if (proofFile) {
-        const text = await proofFile.text();
-        proofData = JSON.parse(text);
-      } else if (proofJson) {
-        proofData = JSON.parse(proofJson);
-      } else {
-        alert('Please upload or paste proof JSON');
-        setVerifying(false);
-        return;
-      }
-
-      const { verifyProof } = await import('@/lib/zk/proof');
-      const isValid = await verifyProof(
-        proofData.proof,
-        proofData.publicSignals,
-        proofData.circuitType || 'age18'
-      );
-
-      setVerificationResult({ valid: isValid, proofData });
-      setShowVerificationModal(true); // Show modal popup
-    } catch (error: any) {
-      setVerificationResult({ valid: false, error: error.message });
-      setShowVerificationModal(true); // Show modal even for errors
-    } finally {
-      setVerifying(false);
-    }
-  };
+  // Verification flow is provided in the merchant app only – no on-chain verification in the wallet UI
 
   // Prevent hydration mismatch by not rendering client-side content until mounted
   if (!mounted) {
@@ -509,16 +470,7 @@ export default function MyProofs() {
               </span>
             )}
           </button>
-          <button
-            onClick={() => setActiveTab('verify')}
-            className={`px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap min-h-[44px] touch-manipulation ${
-              activeTab === 'verify'
-                ? 'border-b-2 border-blue-500 text-white'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            Verify Proof (Merchant)
-          </button>
+          {/* Merchant-side verification lives in the merchant app, so we only show Issue / Generate / Stored here */}
         </div>
       </div>
 

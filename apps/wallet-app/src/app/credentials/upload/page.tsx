@@ -8,7 +8,7 @@ import WalletConnect from '@/components/WalletConnect';
 import { extractFields } from '@/utils/extractFields';
 import { simpleOCR } from '@/utils/simpleOCR';
 
-type DocumentType = 'passport' | 'student-id' | 'driver-license' | '';
+type DocumentType = 'passport' | 'student-id' | 'driver-license' | 'other' | '';
 
 interface ExtractedFields {
   dateOfBirth?: string;
@@ -21,6 +21,7 @@ interface ExtractedFields {
 export default function UploadCredential() {
   const { address, isConnected } = useAccount();
   const [documentType, setDocumentType] = useState<DocumentType>('');
+  const [customDocumentLabel, setCustomDocumentLabel] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [extractedFields, setExtractedFields] = useState<ExtractedFields | null>(null);
@@ -71,7 +72,7 @@ export default function UploadCredential() {
       const credential = {
         id: Date.now().toString(),
         walletAddress: address,
-        documentType,
+        documentType: documentType === 'other' && customDocumentLabel.trim() ? customDocumentLabel.trim() : documentType,
         fileName: file.name,
         fileSize: file.size,
         extractedFields: fields,
@@ -89,7 +90,8 @@ export default function UploadCredential() {
       setSuccess(true);
     } catch (err: any) {
       console.error('Upload error:', err);
-      setError(err.message || 'Failed to process document');
+      // Show a friendly, generic error instead of low-level library messages
+      setError('We could not process this document. Please try a clearer image or a different file format.');
     } finally {
       setUploading(false);
     }
@@ -211,7 +213,22 @@ export default function UploadCredential() {
                 <option value="passport">Passport</option>
                 <option value="student-id">Student ID</option>
                 <option value="driver-license">Driver License</option>
+                <option value="other">Other</option>
               </select>
+              {documentType === 'other' && (
+                <div className="mt-3">
+                  <label className="block text-xs font-medium text-gray-400 mb-1">
+                    Describe document
+                  </label>
+                  <input
+                    type="text"
+                    value={customDocumentLabel}
+                    onChange={(e) => setCustomDocumentLabel(e.target.value)}
+                    placeholder="e.g. Employee ID, Residency Card"
+                    className="block w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+              )}
             </div>
 
             {/* File Upload */}

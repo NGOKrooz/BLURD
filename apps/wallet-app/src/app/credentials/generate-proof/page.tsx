@@ -251,7 +251,7 @@ export default function GenerateProof() {
                   </p>
                 </div>
 
-                <div className="flex space-x-3">
+                <div className="flex">
                   <button
                     onClick={downloadProof}
                     className="flex-1 flex items-center justify-center space-x-2 rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
@@ -259,12 +259,6 @@ export default function GenerateProof() {
                     <Download className="h-4 w-4" />
                     <span>Download Proof</span>
                   </button>
-                  <Link
-                    href={`/verify?uniqueKeyHash=${proof.uniqueKeyHash}`}
-                    className="flex-1 flex items-center justify-center space-x-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors text-center"
-                  >
-                    <span>Verify Proof</span>
-                  </Link>
                 </div>
               </div>
             )}

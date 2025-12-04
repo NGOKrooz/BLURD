@@ -33,8 +33,6 @@ const navigation: NavItem[] = [
   { name: 'Generate Proof', href: '/generate-proof', icon: Key },
   { name: 'My Proofs', href: '/my-proofs', icon: Shield },
   { type: 'divider' },
-  { name: 'Verify Proof', href: '/verify', icon: CheckCircle2 },
-  { type: 'divider' },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

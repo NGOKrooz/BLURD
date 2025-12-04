@@ -2,16 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Shield, Key, Upload, CheckCircle2, User, FileText, Lock } from 'lucide-react';
-import { useAccount, useBalance } from 'wagmi';
+import { ArrowRight, Shield, Key, Upload, User, FileText, Lock } from 'lucide-react';
+import { useAccount } from 'wagmi';
 import WalletConnect from '@/components/WalletConnect';
 import { loadStoredProofs, ProofResult } from '@/lib/zk/proof';
 
 export default function Dashboard() {
   const { address, isConnected } = useAccount();
-  const { data: balance } = useBalance({
-    address: address,
-  });
   const [mounted, setMounted] = useState(false);
   const [proofs, setProofs] = useState<ProofResult[]>([]);
   const [credentials, setCredentials] = useState<any[]>([]);
@@ -36,14 +33,19 @@ export default function Dashboard() {
 
   return (
     <div className="w-full max-w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 overflow-x-hidden">
-      {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-          zk-Passport Dashboard
+      {/* Hero / Headline */}
+      <div className="mb-8 sm:mb-10 text-center">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight mb-3">
+          Prove Anything. <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Reveal Nothing.</span>
         </h1>
-        <p className="text-sm sm:text-base text-gray-400">
-          Your privacy-preserving cryptoidentity hub
-        </p>
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-300">
+          <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1">
+            Identity Proofs
+          </span>
+          <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1">
+            Reusable ZK Credentials
+          </span>
+        </div>
       </div>
 
       {/* Wallet Connection */}
@@ -52,11 +54,11 @@ export default function Dashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex-1">
               <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">
-                Connect Your Wallet
+                Connect your wallet to establish your Identity Anchor
               </h3>
               <p className="text-sm text-gray-300">
-                Connect your EVM wallet (MetaMask, Rainbow, Coinbase) to start using your zk-Passport.
-                Your wallet address serves as your cryptoidentity handle.
+                Connect an EVM wallet (MetaMask, Coinbase, browser wallet) to create and manage your zk-Passport.
+                Your wallet address becomes your cryptoidentity handle.
               </p>
             </div>
             <div className="flex-shrink-0">
@@ -77,11 +79,9 @@ export default function Dashboard() {
               <div>
                 <p className="text-xs font-medium text-gray-400 mb-1">Cryptoidentity Handle</p>
                 <p className="text-sm font-mono text-white">{truncateAddress(address)}</p>
-                {balance && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    {parseFloat(balance.formatted).toFixed(4)} ETH
-                  </p>
-                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  This wallet address is used as your human uniqueness anchor.
+                </p>
               </div>
             </div>
             <WalletConnect />
@@ -102,9 +102,9 @@ export default function Dashboard() {
                 <Upload className="h-5 w-5 text-blue-400" />
               </div>
               <h3 className="text-lg font-semibold text-white">Upload Credential</h3>
-                </div>
+            </div>
             <p className="text-sm text-gray-300 mb-4">
-              Upload ID documents (passport, student ID, driver license) and extract fields securely.
+              Upload an ID or document and extract key identity fields locally.
             </p>
             <div className="flex items-center text-blue-400 group-hover:text-blue-300">
               <span className="text-sm font-medium">Get Started</span>
@@ -124,32 +124,12 @@ export default function Dashboard() {
               <h3 className="text-lg font-semibold text-white">Generate Proof</h3>
             </div>
             <p className="text-sm text-gray-300 mb-4">
-              Create zero-knowledge proofs for age, nationality, or student status without revealing personal data.
+              Prove age, nationality, student status, or human uniqueness with ZK proofs.
             </p>
             <div className="flex items-center text-purple-400 group-hover:text-purple-300">
               <span className="text-sm font-medium">Generate</span>
               <ArrowRight className="h-4 w-4 ml-2" />
             </div>
-          </Link>
-
-          {/* Verify Proof */}
-          <Link
-            href="/verify"
-            className="group bg-gradient-to-br from-green-500/10 to-green-600/10 border border-green-500/20 rounded-xl p-6 hover:border-green-500/40 transition-all hover:shadow-lg hover:shadow-green-500/10"
-          >
-            <div className="flex items-center space-x-3 mb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20">
-                <CheckCircle2 className="h-5 w-5 text-green-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-white">Verify Proof</h3>
-            </div>
-            <p className="text-sm text-gray-300 mb-4">
-              Verify zero-knowledge proofs from others. Check validity without accessing sensitive information.
-            </p>
-            <div className="flex items-center text-green-400 group-hover:text-green-300">
-              <span className="text-sm font-medium">Verify</span>
-              <ArrowRight className="h-4 w-4 ml-2" />
-          </div>
           </Link>
         </div>
       )}
