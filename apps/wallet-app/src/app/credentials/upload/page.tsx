@@ -27,6 +27,11 @@ export default function UploadCredential() {
   const [extractedFields, setExtractedFields] = useState<ExtractedFields | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  
+  // Manual input fields
+  const [manualDob, setManualDob] = useState('');
+  const [manualCountryCode, setManualCountryCode] = useState('');
+  const [showManualFields, setShowManualFields] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -72,14 +77,31 @@ export default function UploadCredential() {
       const documentHash = poseidon([BigInt(file.name.length + file.size)]);
       const credentialHash = poseidon([walletHash, documentHash]);
 
-      // Store credential locally
+      // Merge manual inputs with extracted fields (manual inputs take priority)
+      const finalFields = {
+        ...fields,
+        dob: manualDob.trim() || fields.dob || fields.date_of_birth || '',
+        date_of_birth: manualDob.trim() || fields.date_of_birth || fields.dob || '',
+        countryCode: manualCountryCode.trim().toUpperCase() || fields.countryCode || fields.country_code || '',
+        country_code: manualCountryCode.trim().toUpperCase() || fields.country_code || fields.countryCode || '',
+        country: fields.country || '',
+      };
+      
+      // Store credential locally with both extractedFields and fields for compatibility
       const credential = {
         id: Date.now().toString(),
         walletAddress: address,
         documentType: documentType === 'other' && customDocumentLabel.trim() ? customDocumentLabel.trim() : documentType,
         fileName: file.name,
         fileSize: file.size,
-        extractedFields: fields,
+        extractedFields: finalFields,
+        fields: {
+          dob: finalFields.dob || finalFields.date_of_birth || '',
+          countryCode: finalFields.countryCode || finalFields.country_code || '',
+          country: finalFields.country || '',
+          documentType: finalFields.document_type || documentType,
+          documentNumber: finalFields.documentNumber || finalFields.id_number || '',
+        },
         credentialHash: credentialHash.toString(),
         uploadedAt: new Date().toISOString(),
       };
@@ -90,12 +112,18 @@ export default function UploadCredential() {
       credentials.push(credential);
       localStorage.setItem('blurd_credentials', JSON.stringify(credentials));
 
-      setExtractedFields(fields);
+      setExtractedFields(finalFields);
       setSuccess(true);
       
-      // MVP: Show warning if OCR returned empty or very little text
-      if (!rawText || rawText.trim().length < 10) {
-        setError('Note: Limited text extracted from document. Some fields may be missing. You can still proceed to generate proofs with available fields.');
+      // Show manual input fields if key fields are missing
+      const hasDob = !!(finalFields.dob || finalFields.date_of_birth);
+      const hasCountry = !!(finalFields.countryCode || finalFields.country_code);
+      
+      if (!hasDob || !hasCountry) {
+        setShowManualFields(true);
+        setError('Some required fields are missing. Please fill them manually below to generate proofs.');
+      } else if (!rawText || rawText.trim().length < 10) {
+        setError('Note: Limited text extracted from document. Please verify the fields below.');
       } else {
         setError(null);
       }
@@ -110,13 +138,28 @@ export default function UploadCredential() {
         const documentHash = poseidon([BigInt(file.name.length + file.size)]);
         const credentialHash = poseidon([walletHash, documentHash]);
 
+        const finalFields = {
+          ...fields,
+          dob: manualDob.trim() || fields.dob || fields.date_of_birth || '',
+          date_of_birth: manualDob.trim() || fields.date_of_birth || fields.dob || '',
+          countryCode: manualCountryCode.trim().toUpperCase() || fields.countryCode || fields.country_code || '',
+          country_code: manualCountryCode.trim().toUpperCase() || fields.country_code || fields.countryCode || '',
+        };
+        
         const credential = {
           id: Date.now().toString(),
           walletAddress: address,
           documentType: documentType === 'other' && customDocumentLabel.trim() ? customDocumentLabel.trim() : documentType,
           fileName: file.name,
           fileSize: file.size,
-          extractedFields: fields,
+          extractedFields: finalFields,
+          fields: {
+            dob: finalFields.dob || finalFields.date_of_birth || '',
+            countryCode: finalFields.countryCode || finalFields.country_code || '',
+            country: finalFields.country || '',
+            documentType: (finalFields as any).document_type || finalFields.documentType || documentType,
+            documentNumber: finalFields.documentNumber || (finalFields as any).id_number || '',
+          },
           credentialHash: credentialHash.toString(),
           uploadedAt: new Date().toISOString(),
         };
@@ -126,14 +169,16 @@ export default function UploadCredential() {
         credentials.push(credential);
         localStorage.setItem('blurd_credentials', JSON.stringify(credentials));
 
-        setExtractedFields(fields);
+        setExtractedFields(finalFields);
         setSuccess(true);
-        setError('Document uploaded successfully. Note: OCR extraction had issues, but you can manually add fields or proceed with available data.');
+        setShowManualFields(true);
+        setError('Document uploaded successfully. Please fill in the required fields below to generate proofs.');
       } catch (fallbackErr) {
         // Last resort: show error but don't block
-        setError('Document uploaded, but extraction encountered issues. You can still use the credential for proof generation.');
         setSuccess(true);
-        setExtractedFields({ success: true, document_type: documentType });
+        setShowManualFields(true);
+        setExtractedFields({ success: true, document_type: documentType, dob: '', countryCode: '' });
+        setError('Document uploaded. Please fill in the required fields below.');
       }
     } finally {
       setUploading(false);
@@ -188,33 +233,135 @@ export default function UploadCredential() {
               </p>
             </div>
 
-            <div className="bg-neutral-800/40 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-white mb-3">Extracted Fields</h4>
-              <div className="space-y-2">
-                {Object.entries(extractedFields)
-                  .filter(([key, value]) => 
-                    key !== 'success' && 
-                    key !== 'detected_by' && 
-                    key !== 'raw_text' && 
-                    value !== null && 
-                    value !== undefined && 
-                    value !== ''
-                  )
-                  .map(([key, value]) => (
-                    <div key={key} className="flex justify-between py-2 border-b border-white/5">
-                      <span className="text-xs text-gray-400 capitalize">{key.replace(/_/g, ' ')}</span>
-                      <span className="text-xs text-white font-mono break-all text-right">{String(value)}</span>
-                    </div>
-                  ))}
-                {Object.keys(extractedFields).filter(k => 
-                  k !== 'success' && k !== 'detected_by' && k !== 'raw_text' && extractedFields[k] !== null && extractedFields[k] !== undefined && extractedFields[k] !== ''
-                ).length === 0 && (
-                  <p className="text-xs text-yellow-400 py-2">
-                    Unable to extract all fields, but partial extraction succeeded. Some fields may be missing.
-                  </p>
-                )}
+            <div className="bg-neutral-800/40 rounded-lg p-4 space-y-4">
+              <h4 className="text-sm font-semibold text-white mb-3">Document Information</h4>
+              
+              {/* Manual Input Fields */}
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-300 mb-1.5">
+                    Date of Birth <span className="text-red-400">*</span>
+                    <span className="text-gray-500 text-[10px] ml-1">(Required for Age proof)</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={manualDob || extractedFields?.dob || extractedFields?.date_of_birth || ''}
+                    onChange={(e) => {
+                      setManualDob(e.target.value);
+                      setExtractedFields({
+                        ...extractedFields!,
+                        dob: e.target.value,
+                        date_of_birth: e.target.value,
+                      });
+                    }}
+                    className="block w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                    required
+                  />
+                  <p className="text-[10px] text-gray-500 mt-1">Format: YYYY-MM-DD</p>
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-300 mb-1.5">
+                    Country Code <span className="text-red-400">*</span>
+                    <span className="text-gray-500 text-[10px] ml-1">(Required for Nationality proof)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={manualCountryCode || extractedFields?.countryCode || extractedFields?.country_code || ''}
+                    onChange={(e) => {
+                      const code = e.target.value.toUpperCase().trim();
+                      setManualCountryCode(code);
+                      setExtractedFields({
+                        ...extractedFields!,
+                        countryCode: code,
+                        country_code: code,
+                      });
+                    }}
+                    placeholder="e.g. NG, US, GB"
+                    maxLength={3}
+                    className="block w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none uppercase"
+                    required
+                  />
+                  <p className="text-[10px] text-gray-500 mt-1">ISO 2-letter country code (e.g., NG for Nigeria)</p>
+                </div>
               </div>
+              
+              {/* Other Extracted Fields */}
+              {Object.entries(extractedFields)
+                .filter(([key, value]) => 
+                  key !== 'success' && 
+                  key !== 'detected_by' && 
+                  key !== 'raw_text' && 
+                  key !== 'dob' && 
+                  key !== 'date_of_birth' && 
+                  key !== 'countryCode' && 
+                  key !== 'country_code' &&
+                  value !== null && 
+                  value !== undefined && 
+                  value !== ''
+                ).length > 0 && (
+                <div className="pt-3 border-t border-white/10">
+                  <h5 className="text-xs font-medium text-gray-400 mb-2">Other Extracted Fields</h5>
+                  <div className="space-y-2">
+                    {Object.entries(extractedFields)
+                      .filter(([key, value]) => 
+                        key !== 'success' && 
+                        key !== 'detected_by' && 
+                        key !== 'raw_text' && 
+                        key !== 'dob' && 
+                        key !== 'date_of_birth' && 
+                        key !== 'countryCode' && 
+                        key !== 'country_code' &&
+                        value !== null && 
+                        value !== undefined && 
+                        value !== ''
+                      )
+                      .map(([key, value]) => (
+                        <div key={key} className="flex justify-between py-1.5 border-b border-white/5">
+                          <span className="text-xs text-gray-400 capitalize">{key.replace(/_/g, ' ')}</span>
+                          <span className="text-xs text-white font-mono break-all text-right">{String(value)}</span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
             </div>
+            
+            <button
+              onClick={async () => {
+                // Update credential with manual fields
+                const existingCredentials = localStorage.getItem('blurd_credentials');
+                const credentials = existingCredentials ? JSON.parse(existingCredentials) : [];
+                const credentialIndex = credentials.findIndex((c: any) => c.id === extractedFields?.id || c.uploadedAt);
+                
+                if (credentialIndex >= 0) {
+                  const updatedFields: any = {
+                    ...extractedFields,
+                    dob: manualDob.trim() || extractedFields?.dob || (extractedFields as any)?.date_of_birth || '',
+                    date_of_birth: manualDob.trim() || (extractedFields as any)?.date_of_birth || extractedFields?.dob || '',
+                    countryCode: manualCountryCode.trim().toUpperCase() || extractedFields?.countryCode || (extractedFields as any)?.country_code || '',
+                    country_code: manualCountryCode.trim().toUpperCase() || (extractedFields as any)?.country_code || extractedFields?.countryCode || '',
+                  };
+                  
+                  credentials[credentialIndex].extractedFields = updatedFields;
+                  credentials[credentialIndex].fields = {
+                    dob: updatedFields.dob || updatedFields.date_of_birth || '',
+                    countryCode: updatedFields.countryCode || updatedFields.country_code || '',
+                    country: updatedFields.country || '',
+                    documentType: updatedFields.document_type || updatedFields.documentType || documentType,
+                    documentNumber: updatedFields.documentNumber || updatedFields.id_number || '',
+                  };
+                  
+                  localStorage.setItem('blurd_credentials', JSON.stringify(credentials));
+                  setExtractedFields(updatedFields);
+                  setError(null);
+                }
+              }}
+              disabled={!manualDob.trim() && !manualCountryCode.trim()}
+              className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Save Fields
+            </button>
 
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
               <div className="flex items-start space-x-2">
