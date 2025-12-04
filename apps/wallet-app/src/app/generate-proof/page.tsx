@@ -278,7 +278,7 @@ export default function GenerateProof() {
                 className="block w-full rounded-lg border border-white/10 bg-white/5 px  -4 py-3 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               />
               <p className="mt-1 text-xs text-gray-400">
-                If left empty, the app will try to derive your age from the selected credential's DOB.
+                If left empty, the app will try to derive your age from the selected credential&apos;s DOB.
               </p>
             </div>
           )}
