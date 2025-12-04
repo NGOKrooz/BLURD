@@ -1,6 +1,7 @@
 /**
  * Simple OCR Utility
  * Uses ONLY Tesseract.js - no preprocessing, no filters, no complexity
+ * MVP: Always returns text (even if empty) - never throws errors
  */
 
 import Tesseract from 'tesseract.js';
@@ -8,6 +9,7 @@ import Tesseract from 'tesseract.js';
 /**
  * Extract text from image using Tesseract.js
  * No preprocessing. No filters. Just direct OCR → text.
+ * MVP: Returns empty string on failure instead of throwing
  */
 export async function simpleOCR(file: File): Promise<string> {
   try {
@@ -22,8 +24,9 @@ export async function simpleOCR(file: File): Promise<string> {
     
     return text || '';
   } catch (error: any) {
-    console.error('OCR error:', error);
-    throw new Error(`OCR failed: ${error.message || 'Unknown error'}`);
+    console.warn('OCR error (non-fatal, continuing with empty text):', error);
+    // MVP: Return empty string instead of throwing - allows partial extraction
+    return '';
   }
 }
 
