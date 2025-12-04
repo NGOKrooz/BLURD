@@ -3,46 +3,45 @@
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 
 /**
- * Transaction Loading Animation Component
- * Shows animated spinner and status while waiting for transaction confirmation
+ * Operation Loading Animation Component
+ * Shows animated spinner and status while waiting for operations to complete
  */
-interface TransactionLoadingProps {
-  status: 'pending' | 'accepted' | 'rejected' | 'confirmed';
-  txHash?: string;
+interface OperationLoadingProps {
+  status: 'pending' | 'processing' | 'complete' | 'failed';
   message?: string;
 }
 
-export default function TransactionLoading({ status, txHash, message }: TransactionLoadingProps) {
+export default function OperationLoading({ status, message }: OperationLoadingProps) {
   const getStatusConfig = () => {
     switch (status) {
       case 'pending':
         return {
           icon: <Loader2 className="h-8 w-8 text-blue-400 animate-spin" />,
-          text: message || 'Waiting for confirmation on the network...',
+          text: message || 'Processing...',
           color: 'text-blue-400',
           bgColor: 'bg-blue-500/10',
           borderColor: 'border-blue-500/30',
         };
-      case 'accepted':
+      case 'processing':
         return {
-          icon: <Loader2 className="h-8 w-8 text-yellow-400 animate-spin" />,
-          text: 'Transaction accepted. Waiting for final confirmation...',
-          color: 'text-yellow-400',
-          bgColor: 'bg-yellow-500/10',
-          borderColor: 'border-yellow-500/30',
+          icon: <Loader2 className="h-8 w-8 text-purple-400 animate-spin" />,
+          text: message || 'Generating proof...',
+          color: 'text-purple-400',
+          bgColor: 'bg-purple-500/10',
+          borderColor: 'border-purple-500/30',
         };
-      case 'confirmed':
+      case 'complete':
         return {
           icon: <CheckCircle2 className="h-8 w-8 text-green-400" />,
-          text: 'Transaction confirmed',
+          text: message || 'Operation complete',
           color: 'text-green-400',
           bgColor: 'bg-green-500/10',
           borderColor: 'border-green-500/30',
         };
-      case 'rejected':
+      case 'failed':
         return {
           icon: <XCircle className="h-8 w-8 text-red-400" />,
-          text: 'Transaction rejected or failed',
+          text: message || 'Operation failed',
           color: 'text-red-400',
           bgColor: 'bg-red-500/10',
           borderColor: 'border-red-500/30',
@@ -69,16 +68,9 @@ export default function TransactionLoading({ status, txHash, message }: Transact
           <p className={`text-base sm:text-lg font-semibold ${config.color}`}>
             {config.text}
           </p>
-          
-          {txHash && (
-            <div className="mt-4 p-3 bg-neutral-800/50 rounded-lg border border-white/5">
-              <p className="text-xs text-gray-400 mb-1">Transaction Hash</p>
-              <p className="text-xs font-mono text-white break-all">{txHash}</p>
-            </div>
-          )}
 
-          {/* Progress Bar Animation (for pending/accepted) */}
-          {(status === 'pending' || status === 'accepted') && (
+          {/* Progress Bar Animation (for pending/processing) */}
+          {(status === 'pending' || status === 'processing') && (
             <div className="mt-4 w-full max-w-xs">
               <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
                 <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 animate-[shimmer_2s_infinite] bg-[length:200%_100%]"></div>
@@ -101,4 +93,3 @@ export default function TransactionLoading({ status, txHash, message }: Transact
     </div>
   );
 }
-

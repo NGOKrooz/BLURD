@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Info, HelpCircle, Shield, Lock, Eye, EyeOff } from 'lucide-react';
+import { HelpCircle, Shield, Lock, Eye, EyeOff, Info } from 'lucide-react';
 
-type TooltipType = 'privacy' | 'zkproof' | 'commitment' | 'hidden' | 'custom';
+type TooltipType = 'privacy' | 'zkproof' | 'identity' | 'hidden' | 'custom';
 
 interface PrivacyTooltipProps {
   type?: TooltipType;
@@ -16,22 +16,22 @@ const tooltipContent: Record<TooltipType, { icon: React.ReactNode; title: string
   privacy: {
     icon: <Shield className="h-4 w-4 text-blue-400" />,
     title: 'Privacy Protected',
-    text: 'Your wallet address, transaction amounts, and personal details are never exposed on-chain. Only a cryptographic hash (commitment) is stored.',
+    text: 'Your personal information is never exposed. Only zero-knowledge proofs are generated and shared.',
   },
   zkproof: {
     icon: <Lock className="h-4 w-4 text-purple-400" />,
     title: 'Zero-Knowledge Proof',
     text: 'ZK proofs allow you to prove something (like being over 18) without revealing the actual data. The verifier learns nothing except that the statement is true.',
   },
-  commitment: {
-    icon: <Lock className="h-4 w-4 text-green-400" />,
-    title: 'Commitment Hash',
-    text: 'A commitment is a cryptographic hash of your payment details + a random nonce. It hides the actual values while allowing later verification.',
+  identity: {
+    icon: <Shield className="h-4 w-4 text-green-400" />,
+    title: 'Identity Anchor',
+    text: 'Your wallet address serves as your cryptoidentity handle. Identity proofs are bound to your wallet for verification.',
   },
   hidden: {
     icon: <EyeOff className="h-4 w-4 text-yellow-400" />,
     title: 'Hidden Data',
-    text: 'This information is stored locally on your device only. It is never transmitted or stored on the blockchain.',
+    text: 'This information is stored locally on your device only. It is never transmitted to any server or stored on the blockchain.',
   },
   custom: {
     icon: <Info className="h-4 w-4 text-gray-400" />,
@@ -140,4 +140,3 @@ export function PrivacyBadge({
     </span>
   );
 }
-
