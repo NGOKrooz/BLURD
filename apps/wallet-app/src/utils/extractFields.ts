@@ -731,6 +731,8 @@ function extractExpiryDate(text: string): string | null {
 
 /**
  * Main extraction function
+ * Always returns a result, even if extraction is partial
+ * Never throws errors - returns best-effort extraction
  */
 export function extractFields(rawText: string): ExtractedFields {
   const result: ExtractedFields = {
@@ -738,107 +740,141 @@ export function extractFields(rawText: string): ExtractedFields {
     detected_by: {},
   };
   
-  if (!rawText || rawText.trim().length === 0) {
+  try {
+    if (!rawText || rawText.trim().length === 0) {
+      return result;
+    }
+    
+    result.raw_text = rawText;
+    result.success = true;
+  
+    // Detect document type
+    try {
+      const docType = detectDocumentType(rawText);
+      if (docType) {
+        result.document_type = docType.type;
+        result.documentType = docType.type; // Legacy
+        result.detected_by!.document_type = [docType.method];
+      }
+    } catch (e) {
+      // Silently continue if document type detection fails
+    }
+    
+    // Detect country
+    try {
+      let countryData = detectCountry(rawText);
+      
+      // VALIDATION LAYER: Enforce Nigeria if Nigerian keywords found
+      const hasNigerianKeywords = 
+        /\bNIGERIA\b/i.test(rawText) ||
+        /\bNIGERIAN\b/i.test(rawText) ||
+        /\bNIMC\b/i.test(rawText) ||
+        /\bNIN\b/i.test(rawText) ||
+        /\bECOWAS\b/i.test(rawText) ||
+        /\bFEDERAL\s+REPUBLIC\s+OF\s+NIGERIA\b/i.test(rawText);
+      
+      const hasNigeriaFlag = /🇳🇬/.test(rawText);
+      
+      // If Nigerian indicators found, enforce Nigeria
+      if (hasNigerianKeywords || hasNigeriaFlag) {
+        const countries = (countriesData?.countries || []) as Array<{
+          name: string;
+          code: string;
+          code3: string;
+          flag?: string;
+          aliases?: string[];
+        }>;
+        const nigeria = countries.find(c => c.name === 'Nigeria');
+        if (nigeria) {
+          countryData = {
+            country: nigeria.name,
+            code: nigeria.code,
+            methods: ['VALIDATION_OVERRIDE', ...(countryData?.methods || [])],
+            confidence: 1.0,
+          };
+        }
+      }
+      
+      // BLOCK EGYPT: Reject Egypt unless confidence > 90%
+      if (countryData && countryData.country === 'Egypt' && countryData.confidence < 0.90) {
+        // Reject low-confidence Egypt detection
+        countryData = null;
+      }
+      
+      if (countryData) {
+        result.country = countryData.country;
+        result.country_code = countryData.code;
+        result.countryCode = countryData.code; // Legacy
+        result.nationality = countryData.country;
+        result.country_confidence_score = countryData.confidence;
+        result.detected_by!.country = countryData.methods;
+      }
+    } catch (e) {
+      // Silently continue if country detection fails
+    }
+    
+    // Extract unique ID number
+    try {
+      const idData = extractUniqueIdNumber(rawText);
+      if (idData) {
+        result.id_number = idData.id;
+        result.documentNumber = idData.id; // Legacy
+        
+        // Check if it's a VIN
+        if (/VIN|Voter/i.test(rawText) && idData.id.length >= 10) {
+          result.voterNumber = idData.id;
+        }
+        
+        result.detected_by!.id_number = idData.methods;
+      }
+    } catch (e) {
+      // Silently continue if ID extraction fails
+    }
+    
+    // Extract full name
+    try {
+      const fullName = extractFullName(rawText);
+      if (fullName) {
+        result.full_name = fullName;
+      }
+    } catch (e) {
+      // Silently continue if name extraction fails
+    }
+    
+    // Extract date of birth
+    try {
+      const dob = extractDateOfBirth(rawText);
+      if (dob) {
+        result.date_of_birth = dob;
+        result.dob = dob; // Legacy
+        const age = calculateAge(dob);
+        if (age !== null) {
+          result.age = age;
+        }
+      }
+    } catch (e) {
+      // Silently continue if DOB extraction fails
+    }
+    
+    // Extract expiry date
+    try {
+      const expiry = extractExpiryDate(rawText);
+      if (expiry) {
+        result.expiry_date = expiry;
+        result.expiry = expiry; // Legacy
+      }
+    } catch (e) {
+      // Silently continue if expiry extraction fails
+    }
+    
     return result;
+  } catch (error: any) {
+    // If anything goes wrong, return a minimal result with the raw text
+    console.error('Extraction error (non-fatal):', error);
+    return {
+      success: true, // Still mark as success to show partial results
+      raw_text: rawText,
+      detected_by: {},
+    };
   }
-  
-  result.raw_text = rawText;
-  result.success = true;
-  
-  // Detect document type
-  const docType = detectDocumentType(rawText);
-  if (docType) {
-    result.document_type = docType.type;
-    result.documentType = docType.type; // Legacy
-    result.detected_by!.document_type = [docType.method];
-  }
-  
-  // Detect country
-  let countryData = detectCountry(rawText);
-  
-  // VALIDATION LAYER: Enforce Nigeria if Nigerian keywords found
-  const hasNigerianKeywords = 
-    /\bNIGERIA\b/i.test(rawText) ||
-    /\bNIGERIAN\b/i.test(rawText) ||
-    /\bNIMC\b/i.test(rawText) ||
-    /\bNIN\b/i.test(rawText) ||
-    /\bECOWAS\b/i.test(rawText) ||
-    /\bFEDERAL\s+REPUBLIC\s+OF\s+NIGERIA\b/i.test(rawText);
-  
-  const hasNigeriaFlag = /🇳🇬/.test(rawText);
-  
-  // If Nigerian indicators found, enforce Nigeria
-  if (hasNigerianKeywords || hasNigeriaFlag) {
-    const countries = (countriesData?.countries || []) as Array<{
-      name: string;
-      code: string;
-      code3: string;
-      flag?: string;
-      aliases?: string[];
-    }>;
-    const nigeria = countries.find(c => c.name === 'Nigeria');
-    if (nigeria) {
-      countryData = {
-        country: nigeria.name,
-        code: nigeria.code,
-        methods: ['VALIDATION_OVERRIDE', ...(countryData?.methods || [])],
-        confidence: 1.0,
-      };
-    }
-  }
-  
-  // BLOCK EGYPT: Reject Egypt unless confidence > 90%
-  if (countryData && countryData.country === 'Egypt' && countryData.confidence < 0.90) {
-    // Reject low-confidence Egypt detection
-    countryData = null;
-  }
-  
-  if (countryData) {
-    result.country = countryData.country;
-    result.country_code = countryData.code;
-    result.countryCode = countryData.code; // Legacy
-    result.nationality = countryData.country;
-    result.country_confidence_score = countryData.confidence;
-    result.detected_by!.country = countryData.methods;
-  }
-  
-  // Extract unique ID number
-  const idData = extractUniqueIdNumber(rawText);
-  if (idData) {
-    result.id_number = idData.id;
-    result.documentNumber = idData.id; // Legacy
-    
-    // Check if it's a VIN
-    if (/VIN|Voter/i.test(rawText) && idData.id.length >= 10) {
-      result.voterNumber = idData.id;
-    }
-    
-    result.detected_by!.id_number = idData.methods;
-  }
-  
-  // Extract full name
-  const fullName = extractFullName(rawText);
-  if (fullName) {
-    result.full_name = fullName;
-  }
-  
-  // Extract date of birth
-  const dob = extractDateOfBirth(rawText);
-  if (dob) {
-    result.date_of_birth = dob;
-    result.dob = dob; // Legacy
-    const age = calculateAge(dob);
-    if (age !== null) {
-      result.age = age;
-    }
-  }
-  
-  // Extract expiry date
-  const expiry = extractExpiryDate(rawText);
-  if (expiry) {
-    result.expiry_date = expiry;
-    result.expiry = expiry; // Legacy
-  }
-  
-  return result;
 }

@@ -1,19 +1,30 @@
 'use client';
 
-import { WagmiProvider, createConfig, http } from 'wagmi';
-import { mainnet, sepolia } from 'wagmi/chains';
+import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import { RainbowKitProvider, getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { metaMaskWallet, coinbaseWallet, rainbowWallet, walletConnectWallet, okxWallet } from '@rainbow-me/rainbowkit/wallets';
+import { mainnet, sepolia } from 'wagmi/chains';
 import '@rainbow-me/rainbowkit/styles.css';
 import { ReactNode } from 'react';
 
-// Create wagmi config with default connectors (injected / MetaMask / etc.)
-const config = createConfig({
+// Create wagmi config with multiple wallet connectors
+const config = getDefaultConfig({
+  appName: 'BLURD Identity Proof',
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'default-project-id',
   chains: [sepolia, mainnet],
-  transports: {
-    [sepolia.id]: http(),
-    [mainnet.id]: http(),
-  },
+  wallets: [
+    {
+      groupName: 'Recommended',
+      wallets: [
+        metaMaskWallet,
+        coinbaseWallet,
+        rainbowWallet,
+        walletConnectWallet,
+        okxWallet,
+      ],
+    },
+  ],
 });
 
 const queryClient = new QueryClient();

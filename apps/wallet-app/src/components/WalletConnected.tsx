@@ -7,8 +7,8 @@ import WalletConnect from '@/components/WalletConnect';
 
 /**
  * Wallet Connected Screen Component
- * Displays wallet address, ETH balance, and connection status
- * Integrates with EVM wallets via RainbowKit (MetaMask, Rainbow, Coinbase)
+ * Displays wallet address and connection status
+ * Integrates with EVM wallets via RainbowKit (MetaMask, Rainbow, Coinbase, WalletConnect, OKX)
  */
 export default function WalletConnected() {
   const { address, isConnected } = useAccount();
@@ -60,9 +60,9 @@ export default function WalletConnected() {
         </div>
       </div>
 
-      {/* Wallet Address */}
+      {/* Cryptoidentity Handle */}
       <div className="mb-6">
-        <label className="block text-xs font-medium text-gray-400 mb-2">Wallet Address</label>
+        <label className="block text-xs font-medium text-gray-400 mb-2">Cryptoidentity Handle</label>
         <div className="flex items-center space-x-3 bg-neutral-800/50 rounded-lg p-4 border border-white/5">
           <div className="flex-shrink-0">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20">
@@ -71,7 +71,7 @@ export default function WalletConnected() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-mono text-white break-all">{address}</p>
-            <p className="text-xs text-gray-500 mt-1 font-mono">{truncateAddress(address)}</p>
+            <p className="text-xs text-gray-500 mt-1">This wallet address is your identity anchor</p>
           </div>
           <button
             onClick={handleCopy}

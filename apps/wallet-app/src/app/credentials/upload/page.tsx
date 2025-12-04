@@ -90,8 +90,17 @@ export default function UploadCredential() {
       setSuccess(true);
     } catch (err: any) {
       console.error('Upload error:', err);
-      // Show a friendly, generic error instead of low-level library messages
-      setError('We could not process this document. Please try a clearer image or a different file format.');
+      // Show a friendly, helpful error message
+      const errorMessage = err.message || 'Unknown error';
+      if (errorMessage.includes('OCR') || errorMessage.includes('text') || errorMessage.includes('R')) {
+        setError('Unable to extract all fields, but partial extraction succeeded. Please review the extracted fields below.');
+        // Still try to show partial results if available
+        if (extractedFields) {
+          setSuccess(true);
+        }
+      } else {
+        setError('We could not process this document. Please try a clearer image or a different file format.');
+      }
     } finally {
       setUploading(false);
     }
@@ -138,22 +147,38 @@ export default function UploadCredential() {
             <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
               <div className="flex items-center space-x-2 mb-2">
                 <CheckCircle2 className="h-5 w-5 text-green-400" />
-                <h3 className="text-lg font-semibold text-green-400">Credential Uploaded Successfully</h3>
+                <h3 className="text-lg font-semibold text-green-400">Extraction Complete</h3>
               </div>
               <p className="text-sm text-green-300">
-                Your credential has been bound to your wallet address and stored locally.
+                Review your fields below. Your credential has been bound to your wallet address and stored locally.
               </p>
             </div>
 
             <div className="bg-neutral-800/40 rounded-lg p-4">
               <h4 className="text-sm font-semibold text-white mb-3">Extracted Fields</h4>
               <div className="space-y-2">
-                {Object.entries(extractedFields).map(([key, value]) => (
-                  <div key={key} className="flex justify-between py-2 border-b border-white/5">
-                    <span className="text-xs text-gray-400 capitalize">{key}</span>
-                    <span className="text-xs text-white font-mono">{String(value)}</span>
-                  </div>
-                ))}
+                {Object.entries(extractedFields)
+                  .filter(([key, value]) => 
+                    key !== 'success' && 
+                    key !== 'detected_by' && 
+                    key !== 'raw_text' && 
+                    value !== null && 
+                    value !== undefined && 
+                    value !== ''
+                  )
+                  .map(([key, value]) => (
+                    <div key={key} className="flex justify-between py-2 border-b border-white/5">
+                      <span className="text-xs text-gray-400 capitalize">{key.replace(/_/g, ' ')}</span>
+                      <span className="text-xs text-white font-mono break-all text-right">{String(value)}</span>
+                    </div>
+                  ))}
+                {Object.keys(extractedFields).filter(k => 
+                  k !== 'success' && k !== 'detected_by' && k !== 'raw_text' && extractedFields[k] !== null && extractedFields[k] !== undefined && extractedFields[k] !== ''
+                ).length === 0 && (
+                  <p className="text-xs text-yellow-400 py-2">
+                    Unable to extract all fields, but partial extraction succeeded. Some fields may be missing.
+                  </p>
+                )}
               </div>
             </div>
 

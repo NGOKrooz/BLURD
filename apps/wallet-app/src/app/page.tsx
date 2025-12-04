@@ -50,18 +50,15 @@ export default function Dashboard() {
 
       {/* Wallet Connection */}
       {!isConnected && (
-        <div className="mb-6 sm:mb-8 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-xl p-6 sm:p-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex-1">
-              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">
-                Connect your wallet to establish your Identity Anchor
-              </h3>
-              <p className="text-sm text-gray-300">
-                Connect an EVM wallet (MetaMask, Coinbase, browser wallet) to create and manage your zk-Passport.
-                Your wallet address becomes your cryptoidentity handle.
-              </p>
-            </div>
-            <div className="flex-shrink-0">
+        <div className="mb-6 sm:mb-8 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-xl p-6 sm:p-8 text-center">
+          <div className="max-w-md mx-auto space-y-4">
+            <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">
+              Connect Your Wallet
+            </h3>
+            <p className="text-sm text-gray-300 mb-6">
+              Connect an EVM wallet to establish your Identity Anchor and start creating zero-knowledge proofs.
+            </p>
+            <div className="flex justify-center">
               <WalletConnect />
             </div>
           </div>
@@ -104,7 +101,7 @@ export default function Dashboard() {
               <h3 className="text-lg font-semibold text-white">Upload Credential</h3>
             </div>
             <p className="text-sm text-gray-300 mb-4">
-              Upload an ID or document and extract key identity fields locally.
+              Upload an ID document and extract necessary fields privately.
             </p>
             <div className="flex items-center text-blue-400 group-hover:text-blue-300">
               <span className="text-sm font-medium">Get Started</span>
@@ -124,7 +121,7 @@ export default function Dashboard() {
               <h3 className="text-lg font-semibold text-white">Generate Proof</h3>
             </div>
             <p className="text-sm text-gray-300 mb-4">
-              Prove age, nationality, student status, or human uniqueness with ZK proofs.
+              Create zero-knowledge proofs for age, nationality, student status, or human uniqueness.
             </p>
             <div className="flex items-center text-purple-400 group-hover:text-purple-300">
               <span className="text-sm font-medium">Generate</span>
