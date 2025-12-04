@@ -5,7 +5,7 @@ import { useAccount } from 'wagmi';
 import Link from 'next/link';
 import { Key, CheckCircle2, Download, Shield, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import WalletConnect from '@/components/WalletConnect';
-import { generateProof } from '@/lib/zk/proof';
+import { generateAgeProof, generateCountryProof, generateUniquenessProof } from '@/lib/zk/proof';
 
 type ClaimType = 'age18' | 'nationality' | 'student' | '';
 
@@ -14,6 +14,8 @@ export default function GenerateProof() {
   const [claimType, setClaimType] = useState<ClaimType>('');
   const [selectedCredential, setSelectedCredential] = useState<string>('');
   const [credentials, setCredentials] = useState<any[]>([]);
+  const [ageInput, setAgeInput] = useState('');
+  const [countryInput, setCountryInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [proofGenerated, setProofGenerated] = useState(false);
   const [proof, setProof] = useState<any>(null);
@@ -47,18 +49,54 @@ export default function GenerateProof() {
     setError(null);
 
     try {
-      // Get credential data if selected
-      let credentialData = null;
-      if (selectedCredential) {
-        credentialData = credentials.find((c: any) => c.id === selectedCredential);
-      }
+      let proofResult: any;
 
-      // Generate proof using the ZK proof library
-      const proofResult = await generateProof({
-        circuitType: claimType,
-        walletAddress: address,
-        credentialData: credentialData?.extractedFields || {},
-      });
+      if (claimType === 'age18') {
+        // If user entered age manually, use it; otherwise try to derive from credential
+        let age = parseInt(ageInput || '0', 10);
+        if (!age && selectedCredential) {
+          const cred = credentials.find((c: any) => c.id === selectedCredential);
+          const dob = cred?.extractedFields?.dob || cred?.fields?.dob;
+          if (dob) {
+            const dobDate = new Date(dob);
+            const now = new Date();
+            age = now.getFullYear() - dobDate.getFullYear();
+          }
+        }
+        if (!age || isNaN(age)) {
+          throw new Error('Please provide a valid age or select a credential with a DOB');
+        }
+        proofResult = await generateAgeProof(age, 18);
+      } else if (claimType === 'nationality') {
+        // Use country code input or credential field
+        let userCountry = countryInput.trim().toUpperCase();
+        if (!userCountry && selectedCredential) {
+          const cred = credentials.find((c: any) => c.id === selectedCredential);
+          userCountry = (cred?.extractedFields?.countryCode || cred?.fields?.countryCode || '').toUpperCase();
+        }
+        if (!userCountry) {
+          throw new Error('Please provide your country code or select a credential with a country code');
+        }
+        // For MVP, require userCountry to equal required country (self-asserted)
+        proofResult = await generateCountryProof(userCountry, userCountry);
+      } else if (claimType === 'student') {
+        // For MVP, use uniqueness proof with a simple identifier from credential
+        let identifier = '';
+        if (selectedCredential) {
+          const cred = credentials.find((c: any) => c.id === selectedCredential);
+          identifier =
+            cred?.extractedFields?.studentId ||
+            cred?.fields?.studentId ||
+            cred?.id ||
+            '';
+        }
+        if (!identifier) {
+          throw new Error('Please select a credential that includes a student identifier');
+        }
+        proofResult = await generateUniquenessProof(identifier);
+      } else {
+        throw new Error('Unsupported claim type');
+      }
 
       // Store proof locally
       const stored = localStorage.getItem('blurd_proofs');
@@ -227,6 +265,43 @@ export default function GenerateProof() {
               Choose what you want to prove about yourself without revealing the actual value.
             </p>
           </div>
+
+          {/* Optional Inputs for Claims */}
+          {claimType === 'age18' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Your Age (optional)
+              </label>
+              <input
+                type="number"
+                value={ageInput}
+                onChange={(e) => setAgeInput(e.target.value)}
+                placeholder="Enter your age or select a credential with DOB"
+                className="block w-full rounded-lg border border-white/10 bg-white/5 px  -4 py-3 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              />
+              <p className="mt-1 text-xs text-gray-400">
+                If left empty, the app will try to derive your age from the selected credential's DOB.
+              </p>
+            </div>
+          )}
+
+          {claimType === 'nationality' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Country Code (optional)
+              </label>
+              <input
+                type="text"
+                value={countryInput}
+                onChange={(e) => setCountryInput(e.target.value)}
+                placeholder="e.g. US, NG, DE or select a credential with country code"
+                className="block w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              />
+              <p className="mt-1 text-xs text-gray-400">
+                If left empty, the app will try to use the country code from the selected credential.
+              </p>
+            </div>
+          )}
 
           {/* Credential Selection (Optional) */}
           {credentials.length > 0 && (

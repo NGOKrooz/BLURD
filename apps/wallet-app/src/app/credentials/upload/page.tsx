@@ -6,6 +6,7 @@ import { Upload, FileText, CheckCircle2, AlertCircle, ArrowLeft, Shield } from '
 import Link from 'next/link';
 import WalletConnect from '@/components/WalletConnect';
 import { extractFields } from '@/utils/extractFields';
+import { simpleOCR } from '@/utils/simpleOCR';
 
 type DocumentType = 'passport' | 'student-id' | 'driver-license' | '';
 
@@ -55,8 +56,9 @@ export default function UploadCredential() {
     setError(null);
 
     try {
-      // Extract fields using OCR
-      const fields = await extractFields(file, documentType);
+      // Extract raw text using OCR, then parse fields
+      const rawText = await simpleOCR(file);
+      const fields = extractFields(rawText);
       
       // Bind credential to wallet address using Poseidon hash
       const { poseidon } = await import('circomlibjs');

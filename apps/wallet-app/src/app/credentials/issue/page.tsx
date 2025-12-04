@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Upload, Shield, CheckCircle2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
-import { useStarknet } from '@/providers/starknet-provider';
+import { useAccount } from 'wagmi';
 import WalletConnect from '@/components/WalletConnect';
 import CredentialUpload from '@/components/CredentialUpload';
 import { computeIdCommit, computeUniqueKey, computeUniqueKeyHash, generateNonce } from '@/lib/crypto';
@@ -15,7 +15,7 @@ interface ExtractedFields {
 }
 
 export default function IssueCredential() {
-  const { address, isConnected } = useStarknet();
+  const { address, isConnected } = useAccount();
   const [extractedFields, setExtractedFields] = useState<ExtractedFields>({});
   const [manualFields, setManualFields] = useState<ExtractedFields>({
     dob: '',

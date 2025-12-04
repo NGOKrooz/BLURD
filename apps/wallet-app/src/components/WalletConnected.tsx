@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Wallet, Copy, CheckCircle2, ExternalLink } from 'lucide-react';
 import { useAccount, useBalance } from 'wagmi';
+import WalletConnect from '@/components/WalletConnect';
 
 /**
  * Wallet Connected Screen Component
