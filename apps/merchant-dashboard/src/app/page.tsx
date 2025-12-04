@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, CheckCircle2, Clock, ShieldCheck } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Clock, ShieldCheck, History } from 'lucide-react';
 import StatsCard from '@/components/StatsCard';
+import { calculateMetrics } from '@/lib/verification-history';
 
 interface Metrics {
   verifiedToday: number;
@@ -19,33 +20,31 @@ export default function Home() {
   });
 
   useEffect(() => {
-    // Fetch real-time metrics from BLURD API
-    // Expected response shape (example):
-    // { verifiedToday: number; pending: number; totalVerified: number }
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiUrl) {
-      console.warn('NEXT_PUBLIC_API_URL is not set; dashboard metrics will remain at 0.');
-      return;
-    }
-
-    (async () => {
+    // Load metrics from verification history
+    const loadMetrics = () => {
       try {
-        const res = await fetch(`${apiUrl}/api/merchant/metrics`);
-        if (!res.ok) {
-          console.warn('Failed to fetch merchant metrics:', res.status);
-          return;
-        }
-        const data = await res.json();
-        setMetrics({
-          verifiedToday: Number(data.verifiedToday ?? 0),
-          pending: Number(data.pending ?? 0),
-          totalVerified: Number(data.totalVerified ?? 0),
-        });
+        const calculatedMetrics = calculateMetrics();
+        setMetrics(calculatedMetrics);
       } catch (err) {
-        console.error('Error fetching merchant metrics:', err);
-        // Leave metrics at 0 on error; no dummy data
+        console.error('Error calculating metrics:', err);
       }
-    })();
+    };
+
+    loadMetrics();
+
+    // Update metrics when storage changes (e.g., new verification)
+    const handleStorageChange = () => {
+      loadMetrics();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    // Also listen for custom event for same-tab updates
+    window.addEventListener('verification-saved', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('verification-saved', handleStorageChange);
+    };
   }, []);
 
   return (
@@ -75,23 +74,45 @@ export default function Home() {
         />
       </div>
 
-      <div className="bg-gradient-to-br from-neutral-950/80 via-neutral-900/80 to-neutral-950/80 backdrop-blur-xl rounded-2xl border border-white/10 shadow-lg p-5 sm:p-7">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg sm:text-xl font-semibold text-white mb-1">
-              Start a Verification
-            </h2>
-            <p className="text-xs sm:text-sm text-gray-400">
-              Verify identity proofs (Age and Country) without accessing personal information.
-            </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        <div className="bg-gradient-to-br from-neutral-950/80 via-neutral-900/80 to-neutral-950/80 backdrop-blur-xl rounded-2xl border border-white/10 shadow-lg p-5 sm:p-7">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold text-white mb-1">
+                Start a Verification
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-400">
+                Verify identity proofs (Age and Country) without accessing personal information.
+              </p>
+            </div>
+            <Link
+              href="/verify"
+              className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+            >
+              <span>Start Verification</span>
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
           </div>
-          <Link
-            href="/verify"
-            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
-          >
-            <span>Start Verification</span>
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Link>
+        </div>
+
+        <div className="bg-gradient-to-br from-neutral-950/80 via-neutral-900/80 to-neutral-950/80 backdrop-blur-xl rounded-2xl border border-white/10 shadow-lg p-5 sm:p-7">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold text-white mb-1">
+                View History
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-400">
+                Browse past verifications and proof records.
+              </p>
+            </div>
+            <Link
+              href="/history"
+              className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+            >
+              <History className="mr-2 h-4 w-4" />
+              <span>View History</span>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

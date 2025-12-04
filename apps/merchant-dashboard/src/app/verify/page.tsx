@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Upload, FileJson, Hash } from 'lucide-react';
 import { clsx } from 'clsx';
 import { VerificationResultCard, type VerificationResult, type ProofType } from '@/components/VerificationResultCard';
+import { saveVerification } from '@/lib/verification-history';
 
 type InputMode = 'file' | 'hash';
 
@@ -105,6 +106,9 @@ export default function Verify() {
       // Simulate network latency
       await new Promise((resolve) => setTimeout(resolve, 700));
       setResult(demoResult);
+
+      // Save to history
+      saveVerification(demoResult);
     } catch (err: any) {
       setError(err.message || 'Verification failed. Please try again.');
       setResult(null);

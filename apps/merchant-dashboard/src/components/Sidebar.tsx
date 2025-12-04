@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, CheckCircle2 } from 'lucide-react';
+import { LayoutDashboard, CheckCircle2, History } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Verify Proof', href: '/verify', icon: CheckCircle2 },
+  { name: 'History', href: '/history', icon: History },
 ];
 
 export default function Sidebar() {
