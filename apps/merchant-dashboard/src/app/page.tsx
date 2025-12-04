@@ -82,7 +82,7 @@ export default function Home() {
               Start a Verification
             </h2>
             <p className="text-xs sm:text-sm text-gray-400">
-              Verify eligibility and payment without accessing personal information.
+              Verify identity proofs (Age and Country) without accessing personal information.
             </p>
           </div>
           <Link

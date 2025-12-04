@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Upload, FileJson, Hash } from 'lucide-react';
 import { clsx } from 'clsx';
-import { VerificationResultCard, type VerificationResult } from '@/components/VerificationResultCard';
+import { VerificationResultCard, type VerificationResult, type ProofType } from '@/components/VerificationResultCard';
 
 type InputMode = 'file' | 'hash';
 
@@ -11,14 +11,31 @@ export default function Verify() {
   const [inputMode, setInputMode] = useState<InputMode>('file');
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofHash, setProofHash] = useState('');
-  const [uniqueKeyHash, setUniqueKeyHash] = useState('');
-  const [txid, setTxid] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = (file: File | null) => {
     setProofFile(file);
+  };
+
+  const detectProofType = (proof: any): ProofType => {
+    // Check circuit type or claim type from proof
+    if (proof.circuitType === 'age18' || proof.claimType === 'age18') {
+      return 'age18';
+    }
+    if (proof.circuitType === 'country' || proof.claimType === 'nationality' || proof.claimType === 'country') {
+      return 'country';
+    }
+    // Check public signals for age proof (typically contains age threshold)
+    if (proof.publicSignals && Array.isArray(proof.publicSignals)) {
+      // Age proofs typically have specific public signal patterns
+      if (proof.publicSignals.length === 1 && typeof proof.publicSignals[0] === 'string') {
+        // Could be age proof
+        return 'age18';
+      }
+    }
+    return 'unknown';
   };
 
   const handleVerify = async () => {
@@ -33,21 +50,23 @@ export default function Verify() {
         throw new Error('Please provide a proof hash.');
       }
 
-      let payload: any = {
-        proofHash: proofHash || null,
-        uniqueKeyHash: uniqueKeyHash || null,
-        txid: txid || null,
-      };
+      let proofData: any = null;
+      let detectedProofHash = '';
 
       if (inputMode === 'file' && proofFile) {
         const text = await proofFile.text();
         try {
-          const parsed = JSON.parse(text);
-          payload.proof = parsed;
+          proofData = JSON.parse(text);
+          detectedProofHash = proofData.proofHash || proofData.hash || '';
         } catch {
           throw new Error('Uploaded proof file is not valid JSON.');
         }
+      } else if (inputMode === 'hash') {
+        detectedProofHash = proofHash.trim();
       }
+
+      // Detect proof type
+      const proofType = proofData ? detectProofType(proofData) : 'unknown';
 
       // Placeholder API integration
       // Replace this block with a real call to the deployed BLURD API:
@@ -56,25 +75,31 @@ export default function Verify() {
       // const res = await fetch(`${apiUrl}/api/merchant/verify`, {
       //   method: 'POST',
       //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(payload),
+      //   body: JSON.stringify({ proof: proofData, proofHash: detectedProofHash }),
       // });
       // if (!res.ok) throw new Error('Verification failed');
       // const data = await res.json();
       // setResult({
       //   verified: data.verified,
-      //   paymentConfirmed: data.paymentConfirmed,
-      //   credentialRegistered: data.credentialRegistered,
-      //   proofHash: data.proofHash,
-      //   txid: data.txid,
+      //   proofType: data.proofType || proofType,
+      //   proofHash: data.proofHash || detectedProofHash,
+      //   ageVerified: data.ageVerified,
+      //   countryVerified: data.countryVerified,
       // });
 
-      // Hackathon/demo dummy result
+      // Hackathon/demo verification logic
+      // For demo: if proof structure is valid, consider it verified
+      const isValidProof = proofData && (
+        (proofData.pi_a && proofData.pi_b && proofData.pi_c) || // Groth16 format
+        (proofData.proof && proofData.publicSignals) // Alternative format
+      );
+
       const demoResult: VerificationResult = {
-        verified: true,
-        paymentConfirmed: !!txid,
-        credentialRegistered: !!uniqueKeyHash,
-        proofHash: payload.proofHash || '0xdemo_proof_hash',
-        txid: payload.txid || null,
+        verified: isValidProof || !!detectedProofHash,
+        proofType: proofType,
+        proofHash: detectedProofHash || (proofData?.proofHash || proofData?.hash || '0x...'),
+        ageVerified: proofType === 'age18' && isValidProof,
+        countryVerified: proofType === 'country' && isValidProof,
       };
 
       // Simulate network latency
@@ -91,8 +116,6 @@ export default function Verify() {
   const resetForm = () => {
     setProofFile(null);
     setProofHash('');
-    setUniqueKeyHash('');
-    setTxid('');
     setResult(null);
     setError(null);
   };
@@ -106,10 +129,10 @@ export default function Verify() {
     <div className="space-y-6 sm:space-y-8 max-w-3xl">
       <div>
         <h1 className="text-2xl sm:text-3xl font-semibold text-white">
-          Merchant Verification
+          Identity Proof Verification
         </h1>
         <p className="mt-1 text-xs sm:text-sm text-gray-400">
-          Verify eligibility and payment without accessing personal information.
+          Verify age and country proofs without accessing personal information.
         </p>
       </div>
 
@@ -200,39 +223,6 @@ export default function Verify() {
           </div>
         )}
 
-        {/* Optional fields */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-white/10">
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5">
-              Unique Key Hash
-              <span className="ml-1 text-[11px] text-gray-500 font-normal">
-                (optional, credential)
-              </span>
-            </label>
-            <input
-              type="text"
-              placeholder="unique_key_hash"
-              value={uniqueKeyHash}
-              onChange={(e) => setUniqueKeyHash(e.target.value)}
-              className="block w-full rounded-lg border border-white/10 bg-neutral-900/70 px-3 py-2 text-xs sm:text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
-            />
-          </div>
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1.5">
-              Transaction ID
-              <span className="ml-1 text-[11px] text-gray-500 font-normal">
-                (optional, payment)
-              </span>
-            </label>
-            <input
-              type="text"
-              placeholder="txid / Starknet transaction hash"
-              value={txid}
-              onChange={(e) => setTxid(e.target.value)}
-              className="block w-full rounded-lg border border-white/10 bg-neutral-900/70 px-3 py-2 text-xs sm:text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
-            />
-          </div>
-        </div>
 
         {error && (
           <div className="rounded-lg bg-red-900/20 border border-red-500/30 px-3 py-2.5 text-xs sm:text-sm text-red-200">
@@ -259,9 +249,7 @@ export default function Verify() {
         </div>
       </div>
 
-      <VerificationResultCard
-        result={result && { ...result, proofHash: result.proofHash, txid: result.txid }}
-      />
+      <VerificationResultCard result={result} />
     </div>
   );
 }

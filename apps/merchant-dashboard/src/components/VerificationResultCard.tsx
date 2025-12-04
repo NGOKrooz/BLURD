@@ -3,12 +3,14 @@
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { clsx } from 'clsx';
 
+export type ProofType = 'age18' | 'country' | 'unknown';
+
 export interface VerificationResult {
   verified: boolean;
-  paymentConfirmed: boolean;
-  credentialRegistered: boolean;
+  proofType: ProofType;
   proofHash?: string | null;
-  txid?: string | null;
+  ageVerified?: boolean;
+  countryVerified?: boolean;
 }
 
 interface VerificationResultCardProps {
@@ -16,15 +18,17 @@ interface VerificationResultCardProps {
 }
 
 /**
- * Compact result card focused on what merchants care about:
- *  - Verification result
- *  - Payment status
- *  - Credential registration
+ * Clean result card focused on identity proof verification:
+ *  - Age verification status
+ *  - Country verification status
+ *  - Proof hash
  */
 export function VerificationResultCard({ result }: VerificationResultCardProps) {
   if (!result) return null;
 
-  const overallOk = result.verified && (result.paymentConfirmed || !result.txid);
+  const isAgeProof = result.proofType === 'age18';
+  const isCountryProof = result.proofType === 'country';
+  const overallOk = result.verified;
 
   return (
     <div
@@ -46,45 +50,31 @@ export function VerificationResultCard({ result }: VerificationResultCardProps) 
             {overallOk ? 'Verification Successful' : 'Verification Failed'}
           </h3>
           <p className="text-xs sm:text-sm text-gray-400 mb-4">
-            Verify eligibility and payment without accessing personal information.
+            Identity proof verified without accessing personal information.
           </p>
 
-          <dl className="space-y-2 text-xs sm:text-sm">
-            <div className="flex items-center justify-between gap-4">
-              <dt className="text-gray-400">Verification Result</dt>
-              <dd className={result.verified ? 'text-emerald-300' : 'text-red-300'}>
-                {result.verified ? 'YES' : 'NO'}
-              </dd>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <dt className="text-gray-400">Payment Confirmed</dt>
-              <dd className={result.paymentConfirmed ? 'text-emerald-300' : 'text-gray-300'}>
-                {result.paymentConfirmed ? 'Confirmed' : 'Not Confirmed'}
-              </dd>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <dt className="text-gray-400">Credential Registered</dt>
-              <dd
-                className={
-                  result.credentialRegistered ? 'text-emerald-300' : 'text-gray-300'
-                }
-              >
-                {result.credentialRegistered ? 'Registered' : 'Not Registered'}
-              </dd>
-            </div>
-            {result.proofHash && (
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-gray-400">Proof Hash</dt>
-                <dd className="text-[11px] sm:text-xs text-gray-300 truncate font-mono">
-                  {result.proofHash}
+          <dl className="space-y-3 text-xs sm:text-sm">
+            {isAgeProof && (
+              <div className="flex items-center justify-between gap-4 py-2 border-b border-white/10">
+                <dt className="text-gray-400 font-medium">Age Verification</dt>
+                <dd className={result.ageVerified ? 'text-emerald-300 font-semibold' : 'text-red-300 font-semibold'}>
+                  {result.ageVerified ? 'Age Verified ✅' : 'Age Not Verified ❌'}
                 </dd>
               </div>
             )}
-            {result.txid && (
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-gray-400">Transaction ID</dt>
-                <dd className="text-[11px] sm:text-xs text-gray-300 truncate font-mono">
-                  {result.txid}
+            {isCountryProof && (
+              <div className="flex items-center justify-between gap-4 py-2 border-b border-white/10">
+                <dt className="text-gray-400 font-medium">Country Verification</dt>
+                <dd className={result.countryVerified ? 'text-emerald-300 font-semibold' : 'text-red-300 font-semibold'}>
+                  {result.countryVerified ? 'Country Verified ✅' : 'Country Not Verified ❌'}
+                </dd>
+              </div>
+            )}
+            {result.proofHash && (
+              <div className="pt-2">
+                <dt className="text-gray-400 mb-1.5">Proof Hash</dt>
+                <dd className="text-[11px] sm:text-xs text-gray-300 break-all font-mono bg-neutral-900/40 rounded p-2">
+                  {result.proofHash}
                 </dd>
               </div>
             )}

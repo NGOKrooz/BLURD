@@ -6,8 +6,8 @@ import Layout from '@/components/Layout'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Blurd Merchant Dashboard - Verify Payments & Proofs',
-  description: 'Enterprise-grade proof and payment verification',
+  title: 'Blurd Merchant Dashboard - Identity Proof Verification',
+  description: 'Privacy-preserving age and country verification for merchants',
 }
 
 export default function RootLayout({
