@@ -3,42 +3,13 @@
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { mainnet, sepolia } from 'wagmi/chains';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RainbowKitProvider, connectorsForWallets } from '@rainbow-me/rainbowkit';
-import {
-  rainbowWallet,
-  metaMaskWallet,
-  coinbaseWallet,
-  walletConnectWallet,
-} from '@rainbow-me/rainbowkit/wallets';
+import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import '@rainbow-me/rainbowkit/styles.css';
 import { ReactNode } from 'react';
 
-// WalletConnect project ID (optional)
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '';
-
-// Configure wallet connectors using RainbowKit v2 API
-const connectors = connectorsForWallets(
-  [
-    {
-      groupName: 'Recommended',
-      wallets: [
-        metaMaskWallet,
-        rainbowWallet,
-        coinbaseWallet,
-        ...(projectId ? [walletConnectWallet] : []),
-      ],
-    },
-  ],
-  {
-    appName: 'BLURD - zk-Passport',
-    projectId,
-  }
-);
-
-// Create wagmi config
+// Create wagmi config with default connectors (injected / MetaMask / etc.)
 const config = createConfig({
   chains: [sepolia, mainnet],
-  connectors,
   transports: {
     [sepolia.id]: http(),
     [mainnet.id]: http(),
@@ -51,9 +22,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider>
-          {children}
-        </RainbowKitProvider>
+        <RainbowKitProvider>{children}</RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );
