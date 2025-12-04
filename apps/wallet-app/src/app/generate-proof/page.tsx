@@ -7,7 +7,7 @@ import { Key, CheckCircle2, Download, Shield, ArrowLeft, Loader2, AlertCircle } 
 import WalletConnect from '@/components/WalletConnect';
 import { generateAgeProof, generateCountryProof, generateUniquenessProof } from '@/lib/zk/proof';
 
-type ClaimType = 'age18' | 'nationality' | 'student' | '';
+type ClaimType = 'age18' | 'nationality' | '';
 
 export default function GenerateProof() {
   const { address, isConnected } = useAccount();
@@ -85,19 +85,6 @@ export default function GenerateProof() {
         }
         // For MVP, require userCountry to equal required country (self-asserted)
         proofResult = await generateCountryProof(userCountry, userCountry);
-      } else if (claimType === 'student') {
-        // Use uniqueness proof with a simple identifier from credential
-        const identifier =
-          cred?.extractedFields?.studentId ||
-          cred?.fields?.studentId ||
-          cred?.extractedFields?.id_number ||
-          cred?.fields?.documentNumber ||
-          cred?.id ||
-          '';
-        if (!identifier) {
-          throw new Error('Selected credential does not include a student identifier');
-        }
-        proofResult = await generateUniquenessProof(identifier);
       } else {
         throw new Error('Unsupported claim type');
       }
@@ -268,7 +255,6 @@ export default function GenerateProof() {
               <option value="">Select a claim type</option>
               <option value="age18">Age ≥ 18</option>
               <option value="nationality">Nationality</option>
-              <option value="student">Student Status</option>
             </select>
             <p className="mt-1 text-xs text-gray-400">
               Choose what you want to prove about yourself without revealing the actual value.
