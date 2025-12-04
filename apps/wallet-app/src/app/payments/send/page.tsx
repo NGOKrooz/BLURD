@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Send, CheckCircle2, Download, AlertCircle, ArrowLeft, Shield, Lock, ExternalLink, HelpCircle } from 'lucide-react';
 import Link from 'next/link';
-import { useStarknet } from '@/providers/starknet-provider';
+import { useEthereum } from '@/providers/ethereum-provider';
 import WalletConnect from '@/components/WalletConnect';
 import StatusModal, { ModalStatus } from '@/components/StatusModal';
 import PrivacyTooltip from '@/components/PrivacyTooltip';
@@ -18,7 +18,7 @@ import {
   type PrivacyPreservingPaymentProof,
   type ProofBinding,
 } from '@/lib/payment-proof';
-import { sendPrivatePayment } from '@/lib/starknet/payment';
+import { sendPrivatePayment } from '@/lib/ethereum/payment';
 import { 
   generateNonce, 
   generateCommitment, 
@@ -36,7 +36,7 @@ import {
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_PRIVATE_PAYMENT_CONTRACT_ADDRESS || '';
 
 export default function SendPayment() {
-  const { address, isConnected, isCorrectNetwork, networkError } = useStarknet();
+  const { address, isConnected, isCorrectNetwork, networkError, signer } = useEthereum();
 
   // Form state
   const [recipient, setRecipient] = useState('');
@@ -106,7 +106,12 @@ export default function SendPayment() {
 
     // Check network before proceeding
     if (!isCorrectNetwork) {
-      setError(networkError || 'Please switch your wallet to Starknet Sepolia network');
+      setError(networkError || 'Please switch your wallet to Ethereum Sepolia or Aztec Sepolia network');
+      return;
+    }
+
+    if (!signer) {
+      setError('Wallet signer not available. Please reconnect your wallet.');
       return;
     }
 
@@ -137,12 +142,13 @@ export default function SendPayment() {
       // commitment = poseidon_hash([sender, recipient, amount, nonce])
       const commitment = generateCommitment(address, recipient, amountWei, nonce);
 
-      // Step 4: Send private payment through Starknet contract
+      // Step 4: Send private payment through Ethereum/Aztec
       // Only the commitment is stored on-chain, not the actual details
       const result = await sendPrivatePayment({
         recipient,
         amount,
         commitment,
+        signer,
       });
 
       // Step 5: Store privacy proof locally for later verification
@@ -284,7 +290,7 @@ export default function SendPayment() {
                 ✅ PRIVATE PAYMENT SUCCESSFUL
               </h2>
               <p className="text-sm text-green-300/80">
-                Your transaction has been confirmed on Starknet Sepolia
+                Your transaction has been confirmed on Ethereum Sepolia
               </p>
             </div>
 
@@ -302,13 +308,13 @@ export default function SendPayment() {
               
               <div className="flex items-center justify-between py-2 border-b border-white/5">
                 <p className="text-xs text-gray-400">Amount</p>
-                <p className="text-sm text-white font-semibold">{internalData.amount} STRK</p>
+                <p className="text-sm text-white font-semibold">{internalData.amount} ETH</p>
               </div>
               
               <div className="flex items-center justify-between py-2 border-b border-white/5">
                 <p className="text-xs text-gray-400">Transaction Hash</p>
                 <a
-                  href={`https://sepolia.starkscan.co/tx/${internalData.txHash}`}
+                  href={`https://sepolia.etherscan.io/tx/${internalData.txHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center space-x-1 text-xs text-blue-400 font-mono hover:text-blue-300 transition-colors"
@@ -322,7 +328,7 @@ export default function SendPayment() {
                 <div className="flex items-center justify-between py-2 border-b border-white/5">
                   <p className="text-xs text-gray-400">Contract Address</p>
                   <a
-                    href={`https://sepolia.starkscan.co/contract/${CONTRACT_ADDRESS}`}
+                    href={`https://sepolia.etherscan.io/address/${CONTRACT_ADDRESS}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center space-x-1 text-xs text-blue-400 font-mono hover:text-blue-300 transition-colors"
@@ -424,7 +430,7 @@ export default function SendPayment() {
             {/* Amount */}
             <div>
               <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
-                Amount (STRK)
+                Amount (ETH)
               </label>
               <input
                 type="number"
@@ -553,7 +559,7 @@ export default function SendPayment() {
             {/* Network Note */}
             <div className="text-center py-2">
               <p className="text-xs text-gray-500">
-                Payments are sent on <span className="text-gray-400">Starknet Sepolia Testnet</span>
+                Payments are sent on <span className="text-gray-400">Ethereum Sepolia Testnet</span>
               </p>
             </div>
           </div>

@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Shield, Key, CheckCircle2, Clock, Fingerprint, Lock, Wallet, ExternalLink, Zap } from 'lucide-react';
-import { useStarknet } from '@/providers/starknet-provider';
-import { useStrkBalance } from '@/hooks/useStrkBalance';
+import { useEthereum } from '@/providers/ethereum-provider';
+import { useEthBalance } from '@/hooks/useEthBalance';
 import { loadStoredProofs } from '@/lib/zk/proof';
 import WalletConnect from '@/components/WalletConnect';
 import PrivacyTooltip from '@/components/PrivacyTooltip';
 
-// Contract address for StarkScan link
+// Contract address for Etherscan link
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_PRIVATE_PAYMENT_CONTRACT_ADDRESS || '';
 
 interface CredentialStat {
@@ -22,8 +22,8 @@ interface CredentialStat {
 }
 
 export default function Dashboard() {
-  const { address, isConnected, isCorrectNetwork, networkError } = useStarknet();
-  const { balance, loading: balanceLoading, error: balanceError } = useStrkBalance(address);
+  const { address, isConnected, isCorrectNetwork, networkError } = useEthereum();
+  const { balance, loading: balanceLoading, error: balanceError } = useEthBalance(address);
   const [mounted, setMounted] = useState(false);
   const [stats, setStats] = useState<CredentialStat>({
     totalIssued: 0,
@@ -171,7 +171,7 @@ export default function Dashboard() {
       {!isConnected && (
         <div className="mb-6 sm:mb-8 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h3 className="text-base sm:text-lg font-semibold text-yellow-300">Connect Your Starknet Wallet</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-yellow-300">Connect Your Ethereum Wallet</h3>
             <div className="flex-shrink-0">
               <WalletConnect />
             </div>
@@ -191,7 +191,7 @@ export default function Dashboard() {
             <div>
               <h3 className="text-sm font-semibold text-red-300">Wrong Network</h3>
               <p className="text-xs text-red-200 mt-1">
-                {networkError || 'Please switch your wallet to Starknet Sepolia network.'}
+                {networkError || 'Please switch your wallet to Ethereum Sepolia or Aztec Sepolia network.'}
               </p>
             </div>
           </div>
@@ -220,7 +220,7 @@ export default function Dashboard() {
                   <p className="text-sm text-red-400">{balanceError}</p>
                 ) : (
                   <p className="text-lg font-bold text-white">
-                    {balance || '0.0000'} <span className="text-sm text-gray-400">STRK</span>
+                    {balance || '0.0000'} <span className="text-sm text-gray-400">ETH</span>
                   </p>
                 )}
               </div>

@@ -2,24 +2,24 @@
 
 import { useState, useEffect } from 'react';
 import { Wallet, AlertCircle, Loader2 } from 'lucide-react';
-import { useStarknet } from '@/providers/starknet-provider';
+import { useEthereum } from '@/providers/ethereum-provider';
 import StatusModal, { ModalStatus } from './StatusModal';
 
 /**
- * Starknet Wallet Connect Component
- * Replaces RainbowKit ConnectButton with Starknet-native wallet connection
- * Supports: Argent X, Braavos
+ * Ethereum/Aztec Wallet Connect Component
+ * Supports: MetaMask, WalletConnect, and other Ethereum wallets
+ * Network: Ethereum Sepolia or Aztec Sepolia
  */
 export default function WalletConnect() {
-  const { isConnected, address, connect, disconnect, error, isCorrectNetwork, networkError } = useStarknet();
+  const { isConnected, address, connect, disconnect, error, isCorrectNetwork, networkError } = useEthereum();
   const [walletDetected, setWalletDetected] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [modalStatus, setModalStatus] = useState<ModalStatus>(null);
 
   useEffect(() => {
-    // Check if any Starknet wallet is installed
+    // Check if any Ethereum wallet is installed
     if (typeof window !== 'undefined') {
-      const detected = !!(window.starknet_braavos || window.starknet_argentX || window.starknet);
+      const detected = !!window.ethereum;
       setWalletDetected(detected);
     }
   }, []);
@@ -52,7 +52,7 @@ export default function WalletConnect() {
       <div className="relative z-50">
         <div className="flex items-center space-x-2 px-4 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
           <AlertCircle className="h-4 w-4 text-yellow-400" />
-          <span className="text-xs text-yellow-300">No Starknet wallet detected</span>
+          <span className="text-xs text-yellow-300">No Ethereum wallet detected. Please install MetaMask.</span>
         </div>
       </div>
     );
